@@ -37,7 +37,8 @@
     "eslint-config-airbnb-base": "^4.0.0",
     "eslint-plugin-import": "^1.10.2",
     "eslint-plugin-mocha": "^4.0.0",
-    "ioredis": "^2.2.0"
+    "ioredis": "^2.2.0",
+    "mocha": "^2.5.3"
   },
   "dependencies": {
     "joi": "^8.4.2",

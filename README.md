@@ -22,7 +22,7 @@ When reading docs, keep in mind that anything in `[]` is an optional prop.
   * `prefix`: optional, used in `redis` backend as key prefix
 * `args.encrypt`, used in `crypto.createCipher(algorithm, password)` when encoding long tokens:
   * `algorithm`: one of `openssl list-cipher-algorithms`, example: `aes192`
-  * `password`: The password is used to derive the cipher key and initialization vector (IV).
+  * `sharedSecret`: The password is used to derive the cipher key and initialization vector (IV).
   The value must be either a 'binary' encoded string or a Buffer.
 
 
@@ -37,7 +37,7 @@ const tokenManager = new TokenManager({
   },
   encrypt: {
     algorithm: 'aes256',
-    password: Buffer.from('incredibly-long-secret'),
+    sharedSecret: Buffer.from('incredibly-long-secret'),
   },
 });
 ```

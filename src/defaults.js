@@ -1,9 +1,10 @@
 const Joi = require('joi');
+const pkg = require('../package.json');
 
 const schema = Joi.object({
   backend: {
     name: Joi.string()
-      .allow(['redis'])
+      .only(['redis'])
       .required(),
 
     connection: Joi.alternatives()
@@ -14,13 +15,14 @@ const schema = Joi.object({
           return Joi.alternatives()
             .try(
               Joi.object().type(Redis),
-              Joi.object.type(Redis.Cluster)
+              Joi.object().type(Redis.Cluster)
             );
         }),
       })
       .required(),
 
-    prefix: Joi.string(),
+    prefix: Joi.string()
+      .default(`ms-token!${pkg.version}`),
   },
 
   encrypt: {
@@ -28,7 +30,7 @@ const schema = Joi.object({
     algorithm: Joi.string()
       .required(),
 
-    password: Joi.binary()
+    sharedSecret: Joi.binary()
       .encoding('utf8')
       .min(24)
       .required(),
