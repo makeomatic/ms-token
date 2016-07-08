@@ -1,0 +1,21 @@
+{
+  "extends": "airbnb-base",
+  "parser": "babel-eslint",
+  "plugins": [
+    "mocha"
+  ],
+  "env": {
+    "mocha": true
+  },
+  "rules": {
+    "prefer-arrow-callback": 0,
+    "max-len": [2, 150],
+    "newline-per-chained-call": 0,
+    "no-param-reassign": [2, {"props": false}],
+    "arrow-body-style": 0,
+    "no-underscore-dangle": 0,
+    "global-require": 0,
+    "import/no-extraneous-dependencies": 0
+  },
+  "root": true
+}

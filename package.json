@@ -1,0 +1,41 @@
+{
+  "name": "ms-token",
+  "version": "1.0.0",
+  "description": "utils for makeomatic mservice for encoding/decoding various token types and storing associated metadata with them",
+  "main": "./lib/index.js",
+  "scripts": {
+    "test": "npm run lint && mocha",
+    "lint": "eslint ./src",
+    "compile": "npm run babel ./src -d ./lib",
+    "prepublish": "npm run compile"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/makeomatic/ms-token.git"
+  },
+  "keywords": [
+    "crypto",
+    "tokens",
+    "challenge",
+    "utils",
+    "mservice"
+  ],
+  "author": "Vitaly Aminev <v@makeomatic.ru>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/makeomatic/ms-token/issues"
+  },
+  "homepage": "https://github.com/makeomatic/ms-token#readme",
+  "devDependencies": {
+    "babel-cli": "^6.10.1",
+    "babel-eslint": "^6.1.0",
+    "babel-register": "^6.9.0",
+    "eslint": "^3.0.0",
+    "eslint-config-airbnb-base": "^3.0.1",
+    "eslint-plugin-import": "^1.10.1",
+    "eslint-plugin-mocha": "^3.0.0"
+  },
+  "dependencies": {
+    "node-uuid": "^1.4.7"
+  }
+}
