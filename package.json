@@ -26,16 +26,21 @@
     "url": "https://github.com/makeomatic/ms-token/issues"
   },
   "homepage": "https://github.com/makeomatic/ms-token#readme",
+  "peerDependencies": {
+    "ioredis": "^2.2.0"
+  },
   "devDependencies": {
     "babel-cli": "^6.10.1",
-    "babel-eslint": "^6.1.0",
+    "babel-eslint": "^6.1.1",
     "babel-register": "^6.9.0",
-    "eslint": "^3.0.0",
-    "eslint-config-airbnb-base": "^3.0.1",
-    "eslint-plugin-import": "^1.10.1",
-    "eslint-plugin-mocha": "^3.0.0"
+    "eslint": "^3.0.1",
+    "eslint-config-airbnb-base": "^4.0.0",
+    "eslint-plugin-import": "^1.10.2",
+    "eslint-plugin-mocha": "^4.0.0",
+    "ioredis": "^2.2.0"
   },
   "dependencies": {
+    "joi": "^8.4.2",
     "node-uuid": "^1.4.7"
   }
 }

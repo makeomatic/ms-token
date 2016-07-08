@@ -12,6 +12,7 @@ than once in a certain time span. All of these tasks are easily handled by this 
 ## API
 
 Module API is pretty simple and contains only 4 functions alongside initialization.
+When reading docs, keep in mind that anything in `[]` is an optional prop.
 
 ### `new TokenManager(args)`
 
@@ -78,7 +79,7 @@ Returns `Object`:
 
 Works with both `uid` OR `action`& `id` combo. Sometimes challenge token might not reach the user and the user would want to ask
 for another challenge token. Idea of this is to accept public challenge `uid`, which would use previous data passed in `.create(args)`
-and generate new secret based on this. Can only be used
+and generate new secret based on this. Can only be used when `regenerate` was set to `true` on the `.create(args)` action
 
 Input:
 
