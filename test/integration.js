@@ -78,6 +78,33 @@ describe('TokenManager', () => {
           assert.ifError(response.uid);
         })
       );
+
+      it('creates timed token for supplied id/action, expires as required', () => manager
+        .create({
+          id: ID,
+          action: ACTION,
+          ttl: 3,
+        })
+        .reflect()
+        .then(inspectPromise())
+        .tap(result => {
+          assert.equal(result.id, ID);
+          assert.equal(result.action, ACTION);
+          assert.ok(result.secret);
+        })
+        .then(result => manager
+          .info({ secret: result.secret, encrypt: true })
+          .reflect()
+          .tap(inspectPromise())
+          .delay(3000)
+          .then(() => manager.info({ secret: result.secret, encrypt: true }))
+          .reflect()
+          .then(inspectPromise(false))
+          .then(error => {
+            assert.equal(error.message, 404);
+          })
+        )
+      );
     });
   });
 });

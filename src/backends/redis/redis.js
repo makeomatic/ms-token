@@ -89,12 +89,20 @@ class RedisBackend {
       key = this.key(action, id);
     }
 
+    let length = 0;
+
     return this
       .redis
       .hgetall(key)
-      .then(output => mapValues(output, (value, prop) => (
-        RedisBackend.RESERVED_PROPS[prop] ? value : RedisBackend.deserialize(value)
-      )));
+      .then(output => mapValues(output, (value, prop) => {
+        ++length;
+        return RedisBackend.RESERVED_PROPS[prop] ? value : RedisBackend.deserialize(value);
+      }))
+      .tap(() => {
+        if (length === 0) {
+          throw new Error(404);
+        }
+      });
   }
 }
 
