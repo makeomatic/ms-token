@@ -75,6 +75,25 @@ Returns `Object`:
 * `[uid]`: token unique identificator, when `regenerate` is true
 * `[secret]`: send secret to user for completing challenge (for instance via SMS). Secret is not present if was set to false
 
+### `tokenManager.info(args)`
+
+Returns associated data for an already created token. It doesn't perform any verifications.
+This action should be considered a system action, which could be used for debugging purposes.
+
+Input:
+
+* `args`, must have one of `uid`, `args.action` and `args.id` combo or `args.secret` + `args.encrypt` combo
+* `args.uid`: `String`
+* `args.action`: `String`
+* `args.id`: `String`
+* `args.secret`: `String`
+* `args.encrypt`: `Boolean` - `true` is secret must be encrypted, `false` otherwise. If `false` then `id` and `action` must be supplied alongside
+secret
+
+Response:
+
+* `Object`: associated metadata with a given input
+
 ### `tokenManager.regenerate(uid)`
 
 Works with both `uid` OR `action`& `id` combo. Sometimes challenge token might not reach the user and the user would want to ask
