@@ -1,5 +1,8 @@
 # Token Orchestrator
 
+[![Build Status](https://semaphoreci.com/api/v1/makeomatic/ms-token/branches/master/shields_badge.svg)](https://semaphoreci.com/makeomatic/ms-token)
+[![codecov](https://codecov.io/gh/makeomatic/ms-token/branch/master/graph/badge.svg)](https://codecov.io/gh/makeomatic/ms-token)
+
 There is a common task that requires one to request challenges to be performed for a specific action. Imagine user, who wants to register
 for you service and you need to validate an email, or you want to issue an invitation and remove the burden of activation from a user, as well as
 supply extra meta information with that token. Furthermore, you often need to throttle specific requests and make sure they are not performed more
