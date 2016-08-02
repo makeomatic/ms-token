@@ -20,18 +20,10 @@ local throttle = tonumber(ARGV[5]) or 0;
 -- optional, can be used to retrieve associated information
 -- defaults to #idKey
 local secret = ARGV[6];
+local secretSettings = ARGV[7];
 
 -- metadata associated with the challenge
--- encoded JSON, contains multi-field stringified JSON
-local _metadata = cjson.decode(ARGV[7]);
-local metadata = {};
-local tinsert = table.insert;
-
--- convert metadata to plain table
-for fieldName, filterValue in pairs(_metadata) do
-  tinsert(metadata, fieldName);
-  tinsert(metadata, filterValue);
-end
+local metadata = ARGV[8]
 
 -- helper for empty vals
 local function isempty(s)
@@ -50,7 +42,7 @@ if throttle > 0 then
 end
 
 local function insertToken(key)
-  redis.call("HMSET", key, "id", id, "action", action, "uid", uid, "secret", secret, unpack(metadata));
+  redis.call("HMSET", key, "id", id, "action", action, "uid", uid, "secret", secret, "settings", secretSettings, "metadata", metadata);
   if ttl > 0 then
     redis.call("EXPIRE", key, ttl);
   end

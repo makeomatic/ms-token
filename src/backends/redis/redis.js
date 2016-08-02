@@ -1,7 +1,7 @@
-const reduce = require('lodash/reduce');
 const mapValues = require('lodash/mapValues');
 const filter = require('lodash/filter');
 const get = require('lodash/get');
+const omit = require('lodash/omit');
 const glob = require('glob');
 const fs = require('fs');
 const path = require('path');
@@ -63,6 +63,16 @@ class RedisBackend {
     return this.key(action, id, 'throttle');
   }
 
+  generateKey({ uid, id, action, token }) {
+    if (uid) {
+      return this.uid(uid);
+    } else if (token) {
+      return this.secret(action, id, token);
+    }
+
+    return this.key(action, id);
+  }
+
   // public API
   create(settings) {
     // we need to define proper data structure for retrieval
@@ -70,7 +80,8 @@ class RedisBackend {
 
     // reasonable defaults
     const secret = get(settings, 'secret.token', null);
-    const serializedMetadata = JSON.stringify(mapValues(metadata || {}, RedisBackend.serialize));
+    const secretSettings = RedisBackend.serialize(settings.secret && omit(settings.secret, 'token'));
+    const serializedMetadata = RedisBackend.serialize(metadata || {});
 
     // generate keys
     const idKey = this.key(action, id);
@@ -82,35 +93,57 @@ class RedisBackend {
       .redis
       .msTokenCreate(
         4, idKey, uidKey, secretKey, throttleKey,
-        id, action, uid, ttl, throttle, secret, serializedMetadata
+        id, action, uid, ttl, throttle, secret, secretSettings, serializedMetadata
       );
   }
 
-  info({ uid, id, action, token }) {
-    let key;
-    if (uid) {
-      key = this.uid(uid);
-    } else if (token) {
-      key = this.secret(action, id, token);
-    } else {
-      key = this.key(action, id);
-    }
+  regenerate(opts, updateSecret) {
+    const key = this.generateKey(opts);
 
+    return this
+      .redis
+      .hgetall(key)
+      .then(data => {
+        // missing
+        if (!data.settings || !data.secret) {
+          throw new Error(404);
+        }
+
+        // definitions
+        const id = data.id;
+        const action = data.action;
+        const uid = data.uid;
+        const secretSettings = RedisBackend.deserialize(data.settings);
+        const oldSecret = data.secret;
+        const newSecret = updateSecret(id, action, uid, secretSettings);
+
+        // redis keys
+        const idKey = this.key(action, id);
+        const uidKey = this.uid(uid);
+        const oldSecretKey = this.secret(action, id, oldSecret);
+        const newSecretKey = this.secret(action, id, newSecret);
+
+        return this.redis
+          .msTokenRegenerate(4, idKey, uidKey, oldSecretKey, newSecretKey, oldSecret, newSecret)
+          .return(newSecret);
+      });
+  }
+
+  info(opts) {
+    const key = this.generateKey(opts);
     let length = 0;
 
     return this
       .redis
       .hgetall(key)
-      .then(output => reduce(output, (acc, value, prop) => {
+      .then(output => mapValues(output, (value, prop) => {
+        ++length;
         if (RedisBackend.RESERVED_PROPS[prop]) {
-          acc[prop] = value;
-        } else {
-          acc.metadata[prop] = RedisBackend.deserialize(value);
+          return value;
         }
 
-        ++length;
-        return acc;
-      }, { metadata: {} }))
+        return RedisBackend.deserialize(value);
+      }))
       .tap(() => {
         if (length === 0) {
           throw new Error(404);

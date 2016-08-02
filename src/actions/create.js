@@ -61,7 +61,12 @@ const schema = Joi
       )
       .default(true),
 
-    regenerate: Joi.boolean(),
+    regenerate: Joi.boolean()
+      .when('secret', {
+        is: false,
+        then: Joi.only(false),
+        otherwise: Joi.optional(),
+      }),
   })
   .with('throttle', 'ttl')
   .required();

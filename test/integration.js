@@ -1,3 +1,4 @@
+const Promise = require('bluebird');
 const assert = require('assert');
 const Redis = require('ioredis');
 
@@ -33,7 +34,7 @@ describe('TokenManager', () => {
 
     beforeEach('cleans db', () => redis.flushdb());
 
-    describe('#create', () => {
+    describe('#create & #info', () => {
       it('throw when id is not specified', () => manager
         .create({
           action: ACTION,
@@ -55,6 +56,21 @@ describe('TokenManager', () => {
         .then(rejection => {
           assert.equal(rejection.name, 'ValidationError');
           assert(/\[1\] "action" is required/.test(rejection.toString()));
+        })
+      );
+
+      it('throw when trying to use regenerate & secret: false', () => manager
+        .create({
+          id: ID,
+          action: ACTION,
+          regenerate: true,
+          secret: false,
+        })
+        .reflect()
+        .then(inspectPromise(false))
+        .then(rejection => {
+          assert.equal(rejection.name, 'ValidationError');
+          assert(/\[1\] "regenerate" must be one of \[false\]/.test(rejection.toString()));
         })
       );
 
@@ -340,6 +356,68 @@ describe('TokenManager', () => {
           });
         })
       );
+    });
+
+    describe('#regenerate', () => {
+      it('throws when trying to regenerate token with no secret settings', () =>
+        manager
+          .create({
+            id: ID,
+            action: ACTION,
+            secret: false,
+          })
+          .reflect()
+          .then(inspectPromise())
+          .then(() => manager.regenerate({ id: ID, action: ACTION }))
+          .reflect()
+          .then(inspectPromise(false))
+          .then(error => {
+            assert.equal(error.message, 404);
+          })
+      );
+
+      it('throws when trying to regenerate token concurrently', () =>
+        manager
+          .create({
+            id: ID,
+            action: ACTION,
+            regenerate: true,
+          })
+          .reflect()
+          .then(inspectPromise())
+          .then(() => Promise.join(
+            // would succeed
+            manager.regenerate({ id: ID, action: ACTION }),
+            // would fail
+            manager.regenerate({ id: ID, action: ACTION })
+          ))
+          .reflect()
+          .then(inspectPromise(false))
+          .then(error => {
+            assert.equal(error.message, '409');
+          })
+      );
+
+      it('regenerates numeric secret', () => {
+        manager
+          .create({
+            id: ID,
+            action: ACTION,
+            regenerate: true,
+            secret: {
+              type: 'number',
+              length: 6,
+            },
+          })
+          .reflect()
+          .then(inspectPromise())
+          .then(() => manager.regenerate({ id: ID, action: ACTION }))
+          .reflect()
+          .then(inspectPromise())
+          .then(secret => {
+            assert.ok(/^[0-9]{6}$/i.test(secret));
+          });
+      });
     });
   });
 });

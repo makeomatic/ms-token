@@ -25,6 +25,16 @@ class TokenManager {
    * See README for description of args
    */
   info = require('./actions/info');
+
+  /**
+   * Invoke this method to receive new secret and overwrite old one
+   * Requires `regenerate` to be previously set to `true` during #create()
+   * Only operates when `secret` was not explicitely set to `false` rendering
+   * this function useless
+   *
+   * See README for more details
+   */
+  regenerate = require('./actions/regenerate');
 }
 
 module.exports = TokenManager;
