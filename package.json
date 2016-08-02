@@ -45,6 +45,8 @@
     "eslint-plugin-mocha": "^4.2.0",
     "eslint-plugin-promise": "^2.0.0",
     "ioredis": "^2.2.0",
+    "isparta": "^4.0.0",
+    "istanbul": "^0.4.4",
     "mocha": "^3.0.0"
   },
   "dependencies": {
