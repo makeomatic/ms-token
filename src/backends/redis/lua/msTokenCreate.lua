@@ -23,7 +23,15 @@ local secret = ARGV[6];
 
 -- metadata associated with the challenge
 -- encoded JSON, contains multi-field stringified JSON
-local metadata = cjson.decode(ARGV[7]);
+local _metadata = cjson.decode(ARGV[7]);
+local metadata = {};
+local tinsert = table.insert;
+
+-- convert metadata to plain table
+for fieldName, filterValue in pairs(_metadata) do
+  tinsert(metadata, fieldName);
+  tinsert(metadata, filterValue);
+end
 
 -- helper for empty vals
 local function isempty(s)

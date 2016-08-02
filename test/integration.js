@@ -69,6 +69,7 @@ describe('TokenManager', () => {
           assert.equal(result.id, ID);
           assert.equal(result.action, ACTION);
           assert.ok(result.secret);
+          assert.ifError(result.uid);
         })
         .then(result => manager.info({ secret: result.secret, encrypt: true }))
         .tap(response => {
@@ -158,6 +159,55 @@ describe('TokenManager', () => {
           assert.equal(result.id, ID);
           assert.equal(result.action, ACTION);
           assert.ok(result.secret);
+          assert.ifError(result.uid);
+        })
+      );
+
+      it('if regenerate is supplied, uid is generated', () => manager
+        .create({
+          id: ID,
+          action: ACTION,
+          regenerate: true,
+        })
+        .reflect()
+        .then(inspectPromise())
+        .then(result => {
+          assert.equal(result.id, ID);
+          assert.equal(result.action, ACTION);
+          assert.ok(result.secret);
+          assert.ok(result.uid);
+        })
+      );
+
+      it('if metadata is supplied, it is saved and then restored', () => manager
+        .create({
+          id: ID,
+          action: ACTION,
+          metadata: {
+            random: ['10', 20, {}],
+            bool: true,
+            num: 32,
+            arr: [],
+            obj: { coarse: true },
+          },
+        })
+        .reflect()
+        .then(inspectPromise())
+        .then(result => {
+          assert.equal(result.id, ID);
+          assert.equal(result.action, ACTION);
+          assert.ok(result.secret);
+          assert.ifError(result.uid);
+          return manager.info({ id: result.id, action: result.action });
+        })
+        .then(result => {
+          assert.deepEqual(result.metadata, {
+            random: ['10', 20, {}],
+            bool: true,
+            num: 32,
+            arr: [],
+            obj: { coarse: true },
+          });
         })
       );
     });

@@ -1,3 +1,4 @@
+const reduce = require('lodash/reduce');
 const mapValues = require('lodash/mapValues');
 const filter = require('lodash/filter');
 const glob = require('glob');
@@ -68,6 +69,7 @@ class RedisBackend {
 
     // reasonable defaults
     const secret = settings.secret.token || null;
+    const serializedMetadata = JSON.stringify(mapValues(metadata || {}, RedisBackend.serialize));
 
     // generate keys
     const idKey = this.key(action, id);
@@ -78,18 +80,8 @@ class RedisBackend {
     return this
       .redis
       .msTokenCreate(
-        4,
-        idKey,
-        uidKey,
-        secretKey,
-        throttleKey,
-        id,
-        action,
-        uid,
-        ttl,
-        throttle,
-        secret,
-        JSON.stringify(mapValues(metadata || {}, RedisBackend.serialize))
+        4, idKey, uidKey, secretKey, throttleKey,
+        id, action, uid, ttl, throttle, secret, serializedMetadata
       );
   }
 
@@ -108,10 +100,16 @@ class RedisBackend {
     return this
       .redis
       .hgetall(key)
-      .then(output => mapValues(output, (value, prop) => {
+      .then(output => reduce(output, (acc, value, prop) => {
+        if (RedisBackend.RESERVED_PROPS[prop]) {
+          acc[prop] = value;
+        } else {
+          acc.metadata[prop] = RedisBackend.deserialize(value);
+        }
+
         ++length;
-        return RedisBackend.RESERVED_PROPS[prop] ? value : RedisBackend.deserialize(value);
-      }))
+        return acc;
+      }, { metadata: {} }))
       .tap(() => {
         if (length === 0) {
           throw new Error(404);
