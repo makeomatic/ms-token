@@ -41,6 +41,8 @@ class RedisBackend {
     secret: String,
     uid: String,
     created: Number,
+    verified: Number,
+    isFirstVerification: Boolean,
   };
 
   // static instance of error
