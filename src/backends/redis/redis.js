@@ -1,6 +1,7 @@
 const reduce = require('lodash/reduce');
 const mapValues = require('lodash/mapValues');
 const filter = require('lodash/filter');
+const get = require('lodash/get');
 const glob = require('glob');
 const fs = require('fs');
 const path = require('path');
@@ -68,7 +69,7 @@ class RedisBackend {
     const { action, id, uid, ttl, throttle, metadata } = settings;
 
     // reasonable defaults
-    const secret = settings.secret.token || null;
+    const secret = get(settings, 'secret.token', null);
     const serializedMetadata = JSON.stringify(mapValues(metadata || {}, RedisBackend.serialize));
 
     // generate keys

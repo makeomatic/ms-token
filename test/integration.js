@@ -210,6 +210,136 @@ describe('TokenManager', () => {
           });
         })
       );
+
+      it('generates custom secret, type alphabet', () => manager
+        .create({
+          action: ACTION,
+          id: ID,
+          secret: {
+            type: 'alphabet',
+            alphabet: 'abcd',
+            length: 10,
+          },
+        })
+        .reflect()
+        .then(inspectPromise())
+        .then(result => {
+          assert.equal(result.id, ID);
+          assert.equal(result.action, ACTION);
+          assert.ok(result.secret);
+          assert.ifError(result.uid);
+          assert.equal(result.secret.length, 10);
+
+          // make sure that secret consists only of passed alphabet
+          const chars = 'abcd'.split('');
+          result.secret.split('').forEach(char => {
+            assert(chars.includes(char));
+          });
+        })
+      );
+
+      it('generates custom secret, type number', () => manager
+        .create({
+          action: ACTION,
+          id: ID,
+          secret: {
+            type: 'number',
+            length: 6,
+          },
+        })
+        .reflect()
+        .then(inspectPromise())
+        .then(result => {
+          assert.equal(result.id, ID);
+          assert.equal(result.action, ACTION);
+          assert.ifError(result.uid);
+
+          // contains only numbers
+          assert.ok(/^[0-9]{6}$/.test(result.secret));
+        })
+      );
+
+      it('does not generate secret', () => manager
+        .create({
+          action: ACTION,
+          id: ID,
+          secret: false,
+        })
+        .reflect()
+        .then(inspectPromise())
+        .then(result => {
+          assert.equal(result.id, ID);
+          assert.equal(result.action, ACTION);
+          assert.ifError(result.secret);
+        })
+      );
+
+      it('able to get info via unencrypted secret', () => manager
+        .create({
+          action: ACTION,
+          id: ID,
+          secret: {
+            type: 'uuid',
+            encrypt: false,
+          },
+        })
+        .reflect()
+        .then(inspectPromise())
+        .then(result => {
+          assert.equal(result.id, ID);
+          assert.equal(result.action, ACTION);
+          assert.ok(result.secret);
+          return manager.info({ id: ID, action: ACTION, secret: result.secret, encrypt: false });
+        })
+        .reflect()
+        .then(inspectPromise())
+        .then(result => {
+          assert.equal(result.id, ID);
+          assert.equal(result.action, ACTION);
+          assert.ok(result.secret);
+        })
+      );
+
+      it('uses all options, combined', () => manager
+        .create({
+          action: ACTION,
+          id: ID,
+          ttl: 3,
+          throttle: 2,
+          metadata: {
+            encrypt: 'me',
+          },
+          secret: {
+            type: 'uuid',
+            encrypt: false,
+          },
+          regenerate: true,
+        })
+        .reflect()
+        .then(inspectPromise())
+        .then(result => {
+          assert.equal(result.id, ID);
+          assert.equal(result.action, ACTION);
+          assert.ok(result.uid);
+          assert.ok(result.secret);
+
+          // unencrypted uuid.v4
+          assert.ok(/^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i.test(result.secret));
+          return manager.info({ uid: result.uid });
+        })
+        .reflect()
+        .then(inspectPromise())
+        .then(result => {
+          assert.equal(result.id, ID);
+          assert.equal(result.action, ACTION);
+          assert.ok(result.uid);
+          assert.ok(result.secret);
+          assert.ok(/^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i.test(result.secret));
+          assert.deepEqual(result.metadata, {
+            encrypt: 'me',
+          });
+        })
+      );
     });
   });
 });

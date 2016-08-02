@@ -6,8 +6,7 @@ const crypto = require('../utils/crypto');
 const schema = Joi.alternatives()
   .try(
     Joi.object({
-      uid: Joi.any()
-        .forbidden(),
+      uid: Joi.forbidden(),
 
       action: Joi.string()
         .required(),
@@ -15,39 +14,30 @@ const schema = Joi.alternatives()
       id: Joi.string()
         .required(),
 
-      secret: Joi.any()
-        .forbidden(),
+      secret: Joi.forbidden(),
 
-      encrypt: Joi.any()
-        .forbidden(),
+      encrypt: Joi.forbidden(),
     }),
 
     Joi.object({
       uid: Joi.string()
         .required(),
 
-      action: Joi.any()
-        .forbidden(),
+      action: Joi.forbidden(),
 
-      id: Joi.any()
-        .forbidden(),
+      id: Joi.forbidden(),
 
-      secret: Joi.any()
-        .forbidden(),
+      secret: Joi.forbidden(),
 
-      encrypt: Joi.any()
-        .forbidden(),
+      encrypt: Joi.forbidden(),
     }),
 
     Joi.object({
-      uid: Joi.any()
-        .forbidden(),
+      uid: Joi.forbidden(),
 
-      action: Joi.any()
-        .forbidden(),
+      action: Joi.forbidden(),
 
-      id: Joi.any()
-        .forbidden(),
+      id: Joi.forbidden(),
 
       secret: Joi.string()
         .required(),
@@ -58,8 +48,7 @@ const schema = Joi.alternatives()
     }),
 
     Joi.object({
-      uid: Joi.any()
-        .forbidden(),
+      uid: Joi.forbidden(),
 
       action: Joi.string()
         .required(),
