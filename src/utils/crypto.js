@@ -77,7 +77,12 @@ exports.secret = function createSecret(encrypt, settings, payload) {
  * @return {Object} if parse succeeds - returns object or throws error
  */
 exports.extract = function extractSecret(decrypt, input) {
-  const payload = JSON.parse(decrypt(input));
+  let payload;
+  try {
+    payload = JSON.parse(decrypt(input));
+  } catch (e) {
+    throw new Error('invalid token');
+  }
 
   // so that we don't get truncated encrypted payload that resolved to empty token
   // and is able to verify challenge via action + id only

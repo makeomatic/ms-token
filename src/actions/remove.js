@@ -6,14 +6,16 @@ const crypto = require('../utils/crypto');
 // actual data schema
 const schema = Joi.alternatives()
   .try(
-    // possibly encrypted secret
-    Joi.string(),
-
     // action + id
     Joi.object({
-      uid: Joi.forbidden(),
+      uid: Joi.any().strip().optional(),
       action: Joi.string().required(),
       id: Joi.string().required(),
+
+      // in .remove() action it's optional, because
+      // this should only be done by the system user and no
+      // user input should get to .remove call
+      token: Joi.string(),
     }),
 
     // uid
@@ -21,14 +23,17 @@ const schema = Joi.alternatives()
       uid: Joi.string().required(),
       action: Joi.forbidden(),
       id: Joi.forbidden(),
+      token: Joi.forbidden(),
     })
   );
 
 module.exports = function info(args) {
   return Promise
-    .try(() => Joi.attempt(args, schema))
-    .then(_opts => {
-      const opts = is.string(_opts) ? crypto.extract(this.decrypt, _opts) : _opts;
+    .try(() => Joi.attempt(
+      is.string(args) ? crypto.extract(this.decrypt, args) : args,
+      schema
+    ))
+    .then(opts => {
       const { uid, action, id, token } = opts;
 
       // form argv for #info

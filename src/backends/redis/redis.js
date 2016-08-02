@@ -40,7 +40,11 @@ class RedisBackend {
     action: String,
     secret: String,
     uid: String,
+    created: Number,
   };
+
+  // static instance of error
+  static Unauthorized = new Error(403);
 
   // quick helpers
   static serialize = data => JSON.stringify(data);
@@ -77,7 +81,7 @@ class RedisBackend {
   // public API
   create(settings) {
     // we need to define proper data structure for retrieval
-    const { action, id, uid, ttl, throttle, metadata } = settings;
+    const { action, id, uid, ttl, throttle, metadata, created } = settings;
 
     // reasonable defaults
     const secret = get(settings, 'secret.token', null);
@@ -94,7 +98,7 @@ class RedisBackend {
       .redis
       .msTokenCreate(
         4, idKey, uidKey, secretKey, throttleKey,
-        id, action, uid, ttl, throttle, secret, secretSettings, serializedMetadata
+        id, action, uid, ttl, throttle, created, secret, secretSettings, serializedMetadata
       );
   }
 
@@ -132,26 +136,87 @@ class RedisBackend {
       });
   }
 
+  _deserialize(output) {
+    let length = 0;
+    const remapped = mapValues(output, (value, prop) => {
+      ++length;
+      const transform = RedisBackend.RESERVED_PROPS[prop];
+      if (transform) {
+        return transform(value);
+      }
+
+      return RedisBackend.deserialize(value);
+    });
+
+    return {
+      value: remapped,
+      length,
+    };
+  }
+
   info(opts) {
     const key = this.generateKey(opts);
-    let length = 0;
 
     return this
       .redis
       .hgetall(key)
-      .then(output => mapValues(output, (value, prop) => {
-        ++length;
-        if (RedisBackend.RESERVED_PROPS[prop]) {
-          return value;
-        }
-
-        return RedisBackend.deserialize(value);
-      }))
-      .tap(() => {
-        if (length === 0) {
+      .then(this._deserialize)
+      .then(data => {
+        if (data.length === 0) {
           throw new Error(404);
         }
+
+        return data.value;
       });
+  }
+
+  // this is generally the same as info
+  // if you can access it - you've passed the challenge
+  // top level call ensures that this is only accessed through `secret`
+  verify(opts, settings) {
+    const key = this.generateKey(opts);
+
+    return this
+      .redis
+      .msVerifyToken(1, key, Date.now())
+      .then(data => {
+        const items = data.length;
+        const output = {};
+
+        for (let i = 0; i < items; i += 2) {
+          const prop = data[i];
+          const value = data[i + 1];
+          const transform = RedisBackend.RESERVED_PROPS[prop] || RedisBackend.deserialize;
+          output[prop] = transform(value);
+        }
+
+        return output;
+      })
+      .tap(data => {
+        // remove key if required
+        if (settings.erase) {
+          return this._remove(data).reflect();
+        }
+
+        return null;
+      });
+  }
+
+  // private remove function,
+  // generates keys to be removed and executes redis script
+  _remove(data) {
+    // required data
+    const { action, id, uid, secret } = data;
+
+    // generate keys
+    const keys = compact([
+      this.key(action, id),
+      this.uid(uid),
+      this.secret(action, id, secret),
+      this.throttle(action, id),
+    ]);
+
+    return this.redis.msTokenRemove(keys.length, keys, secret);
   }
 
   remove(opts) {
@@ -167,18 +232,7 @@ class RedisBackend {
           throw new Error(404);
         }
 
-        // required data
-        const { action, id, uid, secret } = data;
-
-        // generate keys
-        const keys = compact([
-          this.key(action, id),
-          this.uid(uid),
-          this.secret(action, id, secret),
-          this.throttle(action, id),
-        ]);
-
-        return this.redis.msTokenRemove(keys.length, keys, secret);
+        return this._remove(data);
       });
   }
 }

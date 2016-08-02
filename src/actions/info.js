@@ -14,7 +14,7 @@ const schema = Joi.alternatives()
       id: Joi.string()
         .required(),
 
-      secret: Joi.forbidden(),
+      token: Joi.forbidden(),
 
       encrypt: Joi.forbidden(),
     }),
@@ -27,7 +27,7 @@ const schema = Joi.alternatives()
 
       id: Joi.forbidden(),
 
-      secret: Joi.forbidden(),
+      token: Joi.forbidden(),
 
       encrypt: Joi.forbidden(),
     }),
@@ -39,7 +39,7 @@ const schema = Joi.alternatives()
 
       id: Joi.forbidden(),
 
-      secret: Joi.string()
+      token: Joi.string()
         .required(),
 
       encrypt: Joi.bool()
@@ -56,7 +56,7 @@ const schema = Joi.alternatives()
       id: Joi.string()
         .required(),
 
-      secret: Joi.string()
+      token: Joi.string()
         .required(),
 
       encrypt: Joi.bool()
@@ -69,7 +69,7 @@ module.exports = function info(args) {
   return Promise
     .try(() => Joi.attempt(args, schema))
     .then(opts => {
-      const { uid, action, id, secret, encrypt } = opts;
+      const { uid, action, id, token, encrypt } = opts;
 
       // form argv for #info
       const argv = {};
@@ -78,13 +78,13 @@ module.exports = function info(args) {
       if (uid) {
         argv.uid = uid;
       // we have encrypted secret
-      } else if (secret && encrypt) {
-        Object.assign(argv, crypto.extract(this.decrypt, secret));
+      } else if (token && encrypt) {
+        Object.assign(argv, crypto.extract(this.decrypt, token));
       // we have just a secret, so we must have id & action, too
-      } else if (secret) {
+      } else if (token) {
         argv.id = id;
         argv.action = action;
-        argv.token = secret;
+        argv.token = token;
       // do plain extraction by id + action
       } else {
         argv.id = id;

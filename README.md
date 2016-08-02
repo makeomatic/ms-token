@@ -116,23 +116,24 @@ Accepts:
 
 * `args` as `String`, we would attempt to decode & verify in according with encryption settings
 * `args` as `Object`:
-  * `args.uid` - either `uid` OR `action` & `id` combination
   * `args.action` - action from `.create()`
   * `args.id` - id from `.create()`
-  * `[args.secret]` - secret from `.crete()` return value
+  * `args.secret` - secret from `.crete()` return value
 * `[opts]` as `Object`:
-  * `opts.erase`: if `true`, when verification succeeds - associated `throttle` is removed, as well as any notion of this token
+  * `opts.erase`: Defaults to `true`. if `true`, when verification succeeds - associated `throttle` is removed, as well as any notion of this token
   * `opts.log`: if `true`, logs attempt time.
 
 Response, always `Object` in case of successful verification:
 
-* `metadata`: JSON.parse() from what was passed to `.metadata` on creation
-* `token`, original creation data:
-  * `token.id`
-  * `token.action`
-  * `token.ttl`
-  * `token.created`
-  * `token.throttle`
+* `id`
+* `action`
+* `uid`
+* `secret`
+* `created`
+* `settings`
+* `metadata`
+* `isFirstVerification` - whether this was a first successful verification
+* `verified` - timestamp when it was verified
 
 Otherwise rejects promise with an error
 

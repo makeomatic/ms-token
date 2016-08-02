@@ -27,6 +27,12 @@ class TokenManager {
   info = require('./actions/info');
 
   /**
+   * Completes challenge by verifying token, optionally removing notion of it
+   * See README for description of args
+   */
+  verify = require('./actions/verify');
+
+  /**
    * Invoke this method to receive new secret and overwrite old one
    * Requires `regenerate` to be previously set to `true` during #create()
    * Only operates when `secret` was not explicitely set to `false` rendering

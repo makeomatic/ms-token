@@ -90,7 +90,7 @@ describe('TokenManager', () => {
           assert.ok(result.secret);
           assert.ifError(result.uid);
         })
-        .then(result => manager.info({ secret: result.secret, encrypt: true }))
+        .then(result => manager.info({ token: result.secret, encrypt: true }))
         .tap(response => {
           assert.equal(response.id, ID);
           assert.equal(response.action, ACTION);
@@ -115,11 +115,11 @@ describe('TokenManager', () => {
           assert.ok(result.secret);
         })
         .then(result => manager
-          .info({ secret: result.secret, encrypt: true })
+          .info({ token: result.secret, encrypt: true })
           .reflect()
           .tap(inspectPromise())
           .delay(3000)
-          .then(() => manager.info({ secret: result.secret, encrypt: true }))
+          .then(() => manager.info({ token: result.secret, encrypt: true }))
           .reflect()
           .then(inspectPromise(false))
           .then(error => {
@@ -320,7 +320,7 @@ describe('TokenManager', () => {
           assert.equal(result.id, ID);
           assert.equal(result.action, ACTION);
           assert.ok(result.secret);
-          return manager.info({ id: ID, action: ACTION, secret: result.secret, encrypt: false });
+          return manager.info({ id: ID, action: ACTION, token: result.secret, encrypt: false });
         })
         .reflect()
         .then(inspectPromise())
@@ -437,6 +437,154 @@ describe('TokenManager', () => {
             assert.ok(/^[0-9]{6}$/i.test(secret));
             return null;
           })
+      );
+    });
+
+    describe('#verify', () => {
+      it('rejects miscomposed secret', () =>
+        manager
+          .create({
+            id: ID,
+            action: ACTION,
+            regenerate: true,
+          })
+          .then(result => manager.verify(result.secret.replace(/j/, 'a')))
+          .reflect()
+          .then(inspectPromise(false))
+          .then(error => {
+            assert.equal(error.message, 'invalid token');
+            return null;
+          })
+      );
+
+      it('rejects invalid secret', () =>
+        manager
+          .create({
+            id: ID,
+            action: ACTION,
+            regenerate: true,
+          })
+          .then(result => manager.verify(result.secret.slice(1)))
+          .reflect()
+          .then(inspectPromise(false))
+          .then(error => {
+            assert.equal(error.message, 'invalid token');
+            return null;
+          })
+      );
+
+      it('completes challenge, erases it by default', () =>
+        manager
+          .create({
+            id: ID,
+            action: ACTION,
+            regenerate: true,
+          })
+          .then(result =>
+            manager
+              .verify(result.secret)
+              .reflect()
+              .then(inspectPromise())
+              .tap(data => {
+                assert.equal(data.id, ID);
+                assert.equal(data.action, ACTION);
+                assert.ok(data.uid);
+                assert.ok(data.verified);
+                assert.equal(data.isFirstVerification, true);
+              })
+              .then(() => manager.verify(result.secret))
+              .reflect()
+              .then(inspectPromise(false))
+              .then(error => {
+                assert.equal(error.message, '404');
+                return null;
+              })
+          )
+      );
+
+      it('completes challenge with unencrypted secret', () =>
+        manager
+          .create({
+            id: ID,
+            action: ACTION,
+            regenerate: true,
+            secret: {
+              type: 'number',
+              length: 10,
+            },
+          })
+          .then(result => manager
+            .verify({ id: ID, action: ACTION, token: result.secret })
+            .reflect()
+            .then(inspectPromise())
+            .tap(data => {
+              assert.equal(data.id, ID);
+              assert.equal(data.action, ACTION);
+              assert.ok(data.uid);
+              assert.ok(data.verified);
+              assert.equal(data.isFirstVerification, true);
+            })
+          )
+      );
+
+      it('completes challenge, does not erase it with settings', () =>
+        manager
+          .create({
+            id: ID,
+            action: ACTION,
+          })
+          .then(result => manager.verify(result.secret, { erase: false }))
+          .reflect()
+          .then(inspectPromise())
+          .tap(result => {
+            assert.equal(result.id, ID);
+            assert.equal(result.action, ACTION);
+            assert.ifError(result.uid);
+            assert.ok(result.verified);
+            assert.ok(result.isFirstVerification);
+          })
+          .then(result => manager.info({ id: ID, action: ACTION, token: result.secret, encrypt: false }))
+          .reflect()
+          .then(inspectPromise())
+          .tap(result => {
+            assert.equal(result.id, ID);
+            assert.equal(result.action, ACTION);
+            assert.ifError(result.uid);
+            assert.ok(result.verified);
+            assert.ifError(result.isFirstVerification);
+          })
+      );
+
+      it('completes challenge, verifies it for the second time', () =>
+        manager
+          .create({
+            id: ID,
+            action: ACTION,
+          })
+          .then(result =>
+            manager
+              .verify(result.secret, { erase: false })
+              .reflect()
+              .then(inspectPromise())
+              .tap(data => {
+                assert.equal(data.id, ID);
+                assert.equal(data.action, ACTION);
+                assert.ifError(data.uid);
+                assert.ok(data.verified);
+                assert.ok(data.isFirstVerification);
+              })
+              .then(() => manager.verify(result.secret))
+              .reflect()
+              .then(inspectPromise())
+              .tap(data => {
+                assert.equal(data.id, ID);
+                assert.equal(data.action, ACTION);
+                assert.ifError(data.uid);
+                assert.ok(data.verified);
+                assert.ifError(data.isFirstVerification);
+                return null;
+              })
+          )
       );
     });
 

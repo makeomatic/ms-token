@@ -17,13 +17,16 @@ local ttl = tonumber(ARGV[4]) or 0;
 -- optional, do not allow #create action on #idKey more than once in #throttle
 local throttle = tonumber(ARGV[5]) or 0;
 
+-- time when token was created
+local created = ARGV[6];
+
 -- optional, can be used to retrieve associated information
 -- defaults to #idKey
-local secret = ARGV[6];
-local secretSettings = ARGV[7];
+local secret = ARGV[7];
+local secretSettings = ARGV[8];
 
 -- metadata associated with the challenge
-local metadata = ARGV[8]
+local metadata = ARGV[9]
 
 -- helper for empty vals
 local function isempty(s)
@@ -42,7 +45,7 @@ if throttle > 0 then
 end
 
 local function insertToken(key)
-  redis.call("HMSET", key, "id", id, "action", action, "uid", uid, "secret", secret, "settings", secretSettings, "metadata", metadata);
+  redis.call("HMSET", key, "id", id, "action", action, "uid", uid, "secret", secret, "created", created, "settings", secretSettings, "metadata", metadata);
   if ttl > 0 then
     redis.call("EXPIRE", key, ttl);
   end
