@@ -8,7 +8,7 @@
     "test-unit": "mocha test/unit.js",
     "test-integration": "./test/docker.sh",
     "lint": "eslint ./src",
-    "compile": "npm run babel ./src -d ./lib",
+    "compile": "babel ./src -d ./lib",
     "prepublish": "npm run compile"
   },
   "repository": {
