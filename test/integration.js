@@ -44,6 +44,7 @@ describe('TokenManager', () => {
         .then(rejection => {
           assert.equal(rejection.name, 'ValidationError');
           assert(/\[1\] "id" is required/.test(rejection.toString()));
+          return null;
         })
       );
 
@@ -56,6 +57,7 @@ describe('TokenManager', () => {
         .then(rejection => {
           assert.equal(rejection.name, 'ValidationError');
           assert(/\[1\] "action" is required/.test(rejection.toString()));
+          return null;
         })
       );
 
@@ -71,6 +73,7 @@ describe('TokenManager', () => {
         .then(rejection => {
           assert.equal(rejection.name, 'ValidationError');
           assert(/\[1\] "regenerate" must be one of \[false\]/.test(rejection.toString()));
+          return null;
         })
       );
 
@@ -121,6 +124,7 @@ describe('TokenManager', () => {
           .then(inspectPromise(false))
           .then(error => {
             assert.equal(error.message, 404);
+            return null;
           })
         )
       );
@@ -155,6 +159,7 @@ describe('TokenManager', () => {
         .then(inspectPromise(false))
         .then(error => {
           assert.equal(error.message, '429');
+          return null;
         })
       );
 
@@ -176,6 +181,8 @@ describe('TokenManager', () => {
           assert.equal(result.action, ACTION);
           assert.ok(result.secret);
           assert.ifError(result.uid);
+
+          return null;
         })
       );
 
@@ -192,6 +199,8 @@ describe('TokenManager', () => {
           assert.equal(result.action, ACTION);
           assert.ok(result.secret);
           assert.ok(result.uid);
+
+          return null;
         })
       );
 
@@ -224,6 +233,8 @@ describe('TokenManager', () => {
             arr: [],
             obj: { coarse: true },
           });
+
+          return null;
         })
       );
 
@@ -251,6 +262,8 @@ describe('TokenManager', () => {
           result.secret.split('').forEach(char => {
             assert(chars.includes(char));
           });
+
+          return null;
         })
       );
 
@@ -272,6 +285,7 @@ describe('TokenManager', () => {
 
           // contains only numbers
           assert.ok(/^[0-9]{6}$/.test(result.secret));
+          return null;
         })
       );
 
@@ -287,6 +301,7 @@ describe('TokenManager', () => {
           assert.equal(result.id, ID);
           assert.equal(result.action, ACTION);
           assert.ifError(result.secret);
+          return null;
         })
       );
 
@@ -313,6 +328,7 @@ describe('TokenManager', () => {
           assert.equal(result.id, ID);
           assert.equal(result.action, ACTION);
           assert.ok(result.secret);
+          return null;
         })
       );
 
@@ -354,6 +370,7 @@ describe('TokenManager', () => {
           assert.deepEqual(result.metadata, {
             encrypt: 'me',
           });
+          return null;
         })
       );
     });
@@ -373,6 +390,7 @@ describe('TokenManager', () => {
           .then(inspectPromise(false))
           .then(error => {
             assert.equal(error.message, 404);
+            return null;
           })
       );
 
@@ -395,10 +413,11 @@ describe('TokenManager', () => {
           .then(inspectPromise(false))
           .then(error => {
             assert.equal(error.message, '409');
+            return null;
           })
       );
 
-      it('regenerates numeric secret', () => {
+      it('regenerates numeric secret', () =>
         manager
           .create({
             id: ID,
@@ -416,8 +435,98 @@ describe('TokenManager', () => {
           .then(inspectPromise())
           .then(secret => {
             assert.ok(/^[0-9]{6}$/i.test(secret));
-          });
-      });
+            return null;
+          })
+      );
+    });
+
+    describe('#remove', () => {
+      it('removes existing secret if it has not changed by id+action', () =>
+        manager
+          .create({
+            id: ID,
+            action: ACTION,
+          })
+          .then(() => manager.remove({ id: ID, action: ACTION }))
+          .reflect()
+          .then(inspectPromise())
+          .then(result => {
+            assert.equal(result, '200');
+            return null;
+          })
+      );
+
+      it('removes existing secret if it has not changed by encrypted secret', () =>
+        manager
+          .create({
+            id: ID,
+            action: ACTION,
+          })
+          .then(result => manager.remove(result.secret))
+          .reflect()
+          .then(inspectPromise())
+          .then(result => {
+            assert.equal(result, '200');
+            return null;
+          })
+      );
+
+      it('removes existing secret if it has not changed by uid', () =>
+        manager
+          .create({
+            id: ID,
+            action: ACTION,
+            regenerate: true,
+          })
+          .then(result => manager.remove({ uid: result.uid }))
+          .reflect()
+          .then(inspectPromise())
+          .then(result => {
+            assert.equal(result, '200');
+            return null;
+          })
+      );
+
+      it('fails to remove non-existing secret', () =>
+        manager
+          .create({
+            id: ID,
+            action: ACTION,
+          })
+          .then(() => manager.remove({ id: ID, action: ACTION }))
+          .reflect()
+          .then(inspectPromise())
+          .then(result => {
+            assert.equal(result, '200');
+            return null;
+          })
+          .then(() => manager.remove({ id: ID, action: ACTION }))
+          .reflect()
+          .then(inspectPromise(false))
+          .then(err => {
+            assert.equal(err.message, 404);
+            return null;
+          })
+      );
+
+      it('fails to remove changed secret', () =>
+        manager
+          .create({
+            id: ID,
+            action: ACTION,
+            regenerate: true,
+          })
+          .then(result => Promise.join(
+            manager.regenerate({ uid: result.uid }),
+            manager.remove({ uid: result.uid })
+          ))
+          .reflect()
+          .then(inspectPromise(false))
+          .then(result => {
+            assert.equal(result.message, '409');
+            return null;
+          })
+      );
     });
   });
 });

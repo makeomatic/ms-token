@@ -23,7 +23,7 @@ redis.call("rename", secretKey, newSecretKey);
 
 -- insert new secret values
 updateSecret(idKey);
-updateSecret(uidKey);
 updateSecret(newSecretKey);
+updateSecret(uidKey);
 
 return redis.status_reply("200");

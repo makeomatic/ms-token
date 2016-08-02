@@ -35,6 +35,14 @@ class TokenManager {
    * See README for more details
    */
   regenerate = require('./actions/regenerate');
+
+  /**
+   * Invoke this method to erase token & associated data from the system
+   * prematurely. It will throw "404" if input does not exist in the system
+   *
+   * See README for more details
+   */
+  remove = require('./actions/remove');
 }
 
 module.exports = TokenManager;

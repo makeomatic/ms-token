@@ -2,6 +2,7 @@ const mapValues = require('lodash/mapValues');
 const filter = require('lodash/filter');
 const get = require('lodash/get');
 const omit = require('lodash/omit');
+const compact = require('lodash/compact');
 const glob = require('glob');
 const fs = require('fs');
 const path = require('path');
@@ -52,11 +53,11 @@ class RedisBackend {
   }
 
   uid(uid) {
-    return this.key('-', '-', 'uid', uid);
+    return uid && this.key('-', '-', 'uid', uid);
   }
 
   secret(action, id, secret) {
-    return this.key(action, id, 'secret', secret);
+    return secret && this.key(action, id, 'secret', secret);
   }
 
   throttle(action, id) {
@@ -85,8 +86,8 @@ class RedisBackend {
 
     // generate keys
     const idKey = this.key(action, id);
-    const uidKey = (uid && this.uid(uid)) || idKey;
-    const secretKey = this.secret(action, id, secret);
+    const uidKey = this.uid(uid) || idKey;
+    const secretKey = this.secret(action, id, secret) || idKey;
     const throttleKey = this.throttle(action, id);
 
     return this
@@ -119,6 +120,8 @@ class RedisBackend {
 
         // redis keys
         const idKey = this.key(action, id);
+
+        // this is always present in case of regenerate
         const uidKey = this.uid(uid);
         const oldSecretKey = this.secret(action, id, oldSecret);
         const newSecretKey = this.secret(action, id, newSecret);
@@ -148,6 +151,34 @@ class RedisBackend {
         if (length === 0) {
           throw new Error(404);
         }
+      });
+  }
+
+  remove(opts) {
+    const key = this.generateKey(opts);
+
+    // get data first
+    return this
+      .redis
+      .hgetall(key)
+      .then(data => {
+        // dummy data check
+        if (!data.id) {
+          throw new Error(404);
+        }
+
+        // required data
+        const { action, id, uid, secret } = data;
+
+        // generate keys
+        const keys = compact([
+          this.key(action, id),
+          this.uid(uid),
+          this.secret(action, id, secret),
+          this.throttle(action, id),
+        ]);
+
+        return this.redis.msTokenRemove(keys.length, keys, secret);
       });
   }
 }
