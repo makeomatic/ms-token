@@ -19,7 +19,7 @@ if ! [ -x "$(which docker-compose)" ]; then
   chmod +x $DIR/.bin/docker-compose
 fi
 
-trap "$COMPOSE logs redis-monitor; $COMPOSE stop; $COMPOSE rm -f -v;" EXIT
+# trap "$COMPOSE logs redis-monitor; $COMPOSE stop; $COMPOSE rm -f -v;" EXIT
 
 # bring compose up
 $COMPOSE up -d

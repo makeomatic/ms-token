@@ -44,10 +44,24 @@ class RedisBackend {
 
   static deserialize = data => JSON.parse(data);
 
+  // redis key helpers
   key(...args) {
     return this.prefix + filter(args, Boolean).join('!');
   }
 
+  uid(uid) {
+    return this.key('-', '-', 'uid', uid);
+  }
+
+  secret(action, id, secret) {
+    return this.key(action, id, 'secret', secret);
+  }
+
+  throttle(action, id) {
+    return this.key(action, id, 'throttle');
+  }
+
+  // public API
   create(settings) {
     // we need to define proper data structure for retrieval
     const { action, id, uid, ttl, throttle, metadata } = settings;
@@ -57,9 +71,9 @@ class RedisBackend {
 
     // generate keys
     const idKey = this.key(action, id);
-    const uidKey = (uid && this.key(uid)) || idKey;
-    const secretKey = this.key(action, id, secret);
-    const throttleKey = this.key(action, id, 'throttle');
+    const uidKey = (uid && this.uid(uid)) || idKey;
+    const secretKey = this.secret(action, id, secret);
+    const throttleKey = this.throttle(action, id);
 
     return this
       .redis
@@ -82,9 +96,9 @@ class RedisBackend {
   info({ uid, id, action, token }) {
     let key;
     if (uid) {
-      key = this.key(uid);
+      key = this.uid(uid);
     } else if (token) {
-      key = this.key(action, id, token);
+      key = this.secret(action, id, token);
     } else {
       key = this.key(action, id);
     }

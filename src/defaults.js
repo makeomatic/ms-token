@@ -30,7 +30,7 @@ const schema = Joi
         .required(),
 
       prefix: Joi.string()
-        .default(`ms-token!${pkg.version}`),
+        .default(`{ms-token!${pkg.version}}`),
     },
 
     encrypt: {

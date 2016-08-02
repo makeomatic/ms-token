@@ -9,7 +9,7 @@ local id = ARGV[1];
 local action = ARGV[2];
 
 -- optional, acts as alias to idKey if present
-local uid = ARGV[3] or "";
+local uid = ARGV[3];
 
 -- optional, remove entry after ttl
 local ttl = tonumber(ARGV[4]) or 0;
@@ -19,16 +19,26 @@ local throttle = tonumber(ARGV[5]) or 0;
 
 -- optional, can be used to retrieve associated information
 -- defaults to #idKey
-local secret = ARGV[6] or "";
+local secret = ARGV[6];
 
 -- metadata associated with the challenge
 -- encoded JSON, contains multi-field stringified JSON
 local metadata = cjson.decode(ARGV[7]);
 
--- make sure that we own the "lock"
-if throttle > 0 and redis.call("SET", throttleKey, "EX", throttle, "NX") == nil then
-  -- return 429 as error code
+-- helper for empty vals
+local function isempty(s)
+  return s == false or s == nil or s == '';
+end
+
+-- we check if value exists before attempting to capture lock
+-- because script execution is atomic, we do not need to make sure that we've captured the lock
+if isempty(redis.call("GET", throttleKey)) ~= true then
   return redis.error_reply("429");
+end
+
+-- make sure that we own the "lock"
+if throttle > 0 then
+  redis.call("SET", throttleKey, "1", "EX", throttle, "NX");
 end
 
 local function insertToken(key)

@@ -94,7 +94,7 @@ module.exports = function create(args) {
     .try(() => Joi.attempt(args, schema))
     .then(opts => {
       const { action, id, ttl, metadata } = opts;
-      const throttle = getThrottle(opts.throttle);
+      const throttle = getThrottle(opts.throttle, ttl);
       const uid = opts.regenerate ? uuid.v4() : false;
       const secret = getSecret(opts.secret);
 

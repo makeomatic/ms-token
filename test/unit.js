@@ -4,6 +4,7 @@ const pkg = require('../package.json');
 
 describe('TokenManager', () => {
   const TokenManager = require('../src');
+  // init redis
   const redis = new Redis({ lazyConnect: true });
 
   describe('#constructor()', () => {
@@ -84,7 +85,7 @@ describe('TokenManager', () => {
 
         assert.equal(tokenManager.config.backend.name, 'redis');
         assert.equal(tokenManager.config.backend.connection, redis);
-        assert.equal(tokenManager.config.backend.prefix, `ms-token!${pkg.version}`);
+        assert.equal(tokenManager.config.backend.prefix, `{ms-token!${pkg.version}}`);
       });
     });
   });
