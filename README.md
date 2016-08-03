@@ -125,6 +125,9 @@ Accepts:
 * `[opts]` as `Object`:
   * `opts.erase`: Defaults to `true`. if `true`, when verification succeeds - associated `throttle` is removed, as well as any notion of this token
   * `opts.log`: if `true`, logs attempt time.
+  * `opts.control`: verifies that decrypted args contains same values
+    * `opts.id` -> checks id
+    * `opts.action` -> checks action
 
 Response, always `Object` in case of successful verification:
 

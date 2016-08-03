@@ -473,6 +473,26 @@ describe('TokenManager', () => {
           })
       );
 
+      it('rejects valid secret when using it for another user', () =>
+        manager
+          .create({
+            id: ID,
+            action: ACTION,
+          })
+          .then(result => manager.verify(result.secret, {
+            control: {
+              id: 'another@mail.com',
+              action: 'another-namespace',
+            },
+          }))
+          .reflect()
+          .then(inspectPromise(false))
+          .then(error => {
+            assert.equal(error.message, `Sanity check failed for "id" failed: "another@mail.com" vs "${ID}"`);
+            return null;
+          })
+      );
+
       it('completes challenge, erases it by default', () =>
         manager
           .create({
