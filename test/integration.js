@@ -186,6 +186,51 @@ describe('TokenManager', () => {
         })
       );
 
+      it('allows to recreate token, and erases old associated token before that', () => manager
+        .create({
+          id: ID,
+          action: ACTION,
+          regenerate: true,
+        })
+        .reflect()
+        .then(inspectPromise())
+        .then(result => {
+          this.uid = result.uid;
+          this.secret = result.secret;
+          return null;
+        })
+        .then(() => manager.create({ id: ID, action: ACTION, regenerate: true }))
+        .reflect()
+        .then(inspectPromise())
+        .then(result => {
+          this.newuid = result.uid;
+          this.newsecret = result.secret;
+          return null;
+        })
+        .then(() => manager.info({ uid: this.uid }))
+        .reflect()
+        .then(inspectPromise(false))
+        .then(() => manager.info({ token: this.secret, encrypt: true }))
+        .reflect()
+        .then(inspectPromise(false))
+        .then(() => manager.info({ uid: this.newuid }))
+        .reflect()
+        .then(inspectPromise())
+        .then(() => manager.info({ token: this.newsecret, encrypt: true }))
+        .reflect()
+        .then(inspectPromise())
+        .then(result => {
+          assert.notEqual(this.uid, result.uid);
+          assert.equal(this.newuid, result.uid);
+          assert.equal(ID, result.id);
+          assert.equal(ACTION, result.action);
+          assert.ok(result.created);
+          assert.ok(result.related);
+          assert.equal(result.related.length, 3);
+          return null;
+        })
+      );
+
       it('if regenerate is supplied, uid is generated', () => manager
         .create({
           id: ID,

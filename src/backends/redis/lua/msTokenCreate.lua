@@ -44,24 +44,37 @@ if throttle > 0 then
   redis.call("SET", throttleKey, "1", "EX", throttle, "NX");
 end
 
-local function insertToken(key)
-  redis.call("HMSET", key, "id", id, "action", action, "uid", uid, "secret", secret, "created", created, "settings", secretSettings, "metadata", metadata);
+local function insertToken(key, encoded)
+  redis.call("HMSET", key, "id", id, "action", action, "uid", uid, "secret", secret, "created", created, "settings", secretSettings, "metadata", metadata, "related", encoded);
+  -- put ttl if required
   if ttl > 0 then
     redis.call("EXPIRE", key, ttl);
   end
 end
 
--- insert basic data
-insertToken(idKey);
-
--- insert secret -> action/id access pattern
-if secretKey ~= idKey then
-  insertToken(secretKey);
+-- NOTICE:
+-- On key recreation we will erase old notions of UID and Secret keys
+local oldKeysJSON = redis.call("HGET", idKey, "related");
+if isempty(oldKeysJSON) ~= true then
+  redis.call("DEL", unpack(cjson.decode(oldKeysJSON)));
 end
 
--- insert uid -> action/id access pattern
+-- related keys
+local related = {idKey};
+
+-- gather keys
+if secretKey ~= idKey then
+  table.insert(related, secretKey);
+end
+
+-- gather keys
 if uidKey ~= idKey then
-  insertToken(uidKey);
+  table.insert(related, uidKey);
+end
+
+local encoded = cjson.encode(related);
+for i,key in ipairs(related) do
+  insertToken(key, encoded);
 end
 
 return redis.status_reply("200");

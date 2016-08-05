@@ -180,7 +180,7 @@ class RedisBackend {
 
     return this
       .redis
-      .msVerifyToken(1, key, Date.now())
+      .msVerifyToken(1, key, Date.now(), String(settings.erase))
       .then(data => {
         const items = data.length;
         const output = {};
@@ -193,14 +193,6 @@ class RedisBackend {
         }
 
         return output;
-      })
-      .tap(data => {
-        // remove key if required
-        if (settings.erase) {
-          return this._remove(data).reflect();
-        }
-
-        return null;
       });
   }
 
