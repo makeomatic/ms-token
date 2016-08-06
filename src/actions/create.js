@@ -16,12 +16,12 @@ const schema = Joi
 
     ttl: Joi.number()
       .integer()
-      .min(1),
+      .min(0),
 
     throttle: Joi.alternatives().try(
       Joi.number()
         .integer()
-        .min(1)
+        .min(0)
         .max(Joi.ref('ttl')),
       Joi.boolean()
         .only(true)
