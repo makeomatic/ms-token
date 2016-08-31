@@ -14,7 +14,8 @@ const schema = Joi
         .only(backends)
         .required(),
 
-      connection: Joi.alternatives()
+      connection: Joi.any()
+        .required()
         .when('name', {
           is: 'redis',
           then: Joi.lazy(() => {
@@ -26,8 +27,7 @@ const schema = Joi
                 Joi.object().type(Redis.Cluster)
               );
           }),
-        })
-        .required(),
+        }),
 
       prefix: Joi.string()
         .default(`{ms-token!${pkg.version}}`),

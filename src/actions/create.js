@@ -37,14 +37,14 @@ const schema = Joi
             .only(['alphabet', 'number', 'uuid'])
             .required(),
 
-          alphabet: Joi.alternatives()
+          alphabet: Joi.any()
             .when('type', {
               is: 'alphabet',
               then: Joi.string().required(),
               otherwise: Joi.forbidden(),
             }),
 
-          length: Joi.alternatives()
+          length: Joi.any()
             .when('type', {
               is: Joi.string().only(['alphabet', 'number']),
               then: Joi.number().integer().min(1).required(),
