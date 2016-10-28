@@ -121,7 +121,7 @@ Accepts:
 * `args` as `Object`:
   * `args.action` - action from `.create()`
   * `args.id` - id from `.create()`
-  * `args.secret` - secret from `.crete()` return value
+  * `args.token` - secret from `.crete()` return value
 * `[opts]` as `Object`:
   * `opts.erase`: Defaults to `true`. if `true`, when verification succeeds - associated `throttle` is removed, as well as any notion of this token
   * `opts.log`: if `true`, logs attempt time.
