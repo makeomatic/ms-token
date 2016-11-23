@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const base64url = require('base64-url');
-const uuid = require('node-uuid');
+const uuid = require('uuid');
 const Chance = require('chance');
 const is = require('is');
 

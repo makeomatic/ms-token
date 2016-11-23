@@ -1,6 +1,6 @@
 const Promise = require('bluebird');
 const Joi = require('joi');
-const uuid = require('node-uuid');
+const uuid = require('uuid');
 const crypto = require('../utils/crypto');
 
 // actual data schema
