@@ -33,7 +33,7 @@ module.exports = function info(args) {
       is.string(args) ? crypto.extract(this.decrypt, args) : args,
       schema
     ))
-    .then(opts => {
+    .then((opts) => {
       const { uid, action, id, token } = opts;
 
       // form argv for #info

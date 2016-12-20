@@ -1,6 +1,6 @@
 const Promise = require('bluebird');
 const Joi = require('joi');
-const uuid = require('node-uuid');
+const uuid = require('uuid');
 const crypto = require('../utils/crypto');
 
 // actual data schema
@@ -97,7 +97,7 @@ function getSecret(_secret) {
 module.exports = function create(args) {
   return Promise
     .try(() => Joi.attempt(args, schema))
-    .then(opts => {
+    .then((opts) => {
       const { action, id, ttl, metadata } = opts;
       const throttle = getThrottle(opts.throttle, ttl);
       const uid = opts.regenerate ? uuid.v4() : false;

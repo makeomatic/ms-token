@@ -28,7 +28,7 @@ class RedisBackend {
     const cwd = path.join(__dirname, 'lua');
     glob
       .sync('*.lua', { cwd })
-      .forEach(script => {
+      .forEach((script) => {
         const name = path.basename(script, '.lua');
         const lua = fs.readFileSync(path.join(cwd, script), 'utf8');
         this.redis.defineCommand(name, { lua });
@@ -110,7 +110,7 @@ class RedisBackend {
     return this
       .redis
       .hgetall(key)
-      .then(data => {
+      .then((data) => {
         // missing
         if (!data.settings || !data.secret) {
           throw new Error(404);
@@ -138,10 +138,10 @@ class RedisBackend {
       });
   }
 
-  _deserialize(output) {
+  static _deserialize(output) {
     let length = 0;
     const remapped = mapValues(output, (value, prop) => {
-      ++length;
+      length += 1;
       const transform = RedisBackend.RESERVED_PROPS[prop];
       if (transform) {
         return transform(value);
@@ -162,8 +162,8 @@ class RedisBackend {
     return this
       .redis
       .hgetall(key)
-      .then(this._deserialize)
-      .then(data => {
+      .then(RedisBackend._deserialize)
+      .then((data) => {
         if (data.length === 0) {
           throw new Error(404);
         }
@@ -181,7 +181,7 @@ class RedisBackend {
     return this
       .redis
       .msVerifyToken(1, key, Date.now(), String(settings.erase))
-      .then(data => {
+      .then((data) => {
         const items = data.length;
         const output = {};
 
@@ -220,7 +220,7 @@ class RedisBackend {
     return this
       .redis
       .hgetall(key)
-      .then(data => {
+      .then((data) => {
         // dummy data check
         if (!data.id) {
           throw new Error(404);

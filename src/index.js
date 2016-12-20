@@ -6,6 +6,7 @@ class TokenManager {
     const config = this.config = defaults(opts);
 
     // require transport
+    // eslint-disable-next-line import/no-dynamic-require
     const Backend = require(`./backends/${config.backend.name}`);
     this.backend = new Backend(config.backend);
 

@@ -68,7 +68,7 @@ const schema = Joi.alternatives()
 module.exports = function info(args) {
   return Promise
     .try(() => Joi.attempt(args, schema))
-    .then(opts => {
+    .then((opts) => {
       const { uid, action, id, token, encrypt } = opts;
 
       // form argv for #info
