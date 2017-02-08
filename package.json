@@ -10,7 +10,7 @@
     "lint": "eslint ./src",
     "compile": "babel ./src -d ./lib --copy-files",
     "preversion": "npm run compile",
-    "postversion": "git push && npm run publish && git push --tags"
+    "postversion": "git push && npm publish && git push --tags"
   },
   "repository": {
     "type": "git",
