@@ -41,7 +41,7 @@ describe('TokenManager', () => {
         })
         .reflect()
         .then(inspectPromise(false))
-        .then(rejection => {
+        .then((rejection) => {
           assert.equal(rejection.name, 'ValidationError');
           assert(/\[1\] "id" is required/.test(rejection.toString()));
           return null;
@@ -54,7 +54,7 @@ describe('TokenManager', () => {
         })
         .reflect()
         .then(inspectPromise(false))
-        .then(rejection => {
+        .then((rejection) => {
           assert.equal(rejection.name, 'ValidationError');
           assert(/\[1\] "action" is required/.test(rejection.toString()));
           return null;
@@ -70,7 +70,7 @@ describe('TokenManager', () => {
         })
         .reflect()
         .then(inspectPromise(false))
-        .then(rejection => {
+        .then((rejection) => {
           assert.equal(rejection.name, 'ValidationError');
           assert(/\[1\] "regenerate" must be one of \[false\]/.test(rejection.toString()));
           return null;
@@ -84,14 +84,14 @@ describe('TokenManager', () => {
         })
         .reflect()
         .then(inspectPromise())
-        .tap(result => {
+        .tap((result) => {
           assert.equal(result.id, ID);
           assert.equal(result.action, ACTION);
           assert.ok(result.secret);
           assert.ifError(result.uid);
         })
         .then(result => manager.info({ token: result.secret, encrypt: true }))
-        .tap(response => {
+        .tap((response) => {
           assert.equal(response.id, ID);
           assert.equal(response.action, ACTION);
           // secret should've been saved
@@ -109,7 +109,7 @@ describe('TokenManager', () => {
         })
         .reflect()
         .then(inspectPromise())
-        .tap(result => {
+        .tap((result) => {
           assert.equal(result.id, ID);
           assert.equal(result.action, ACTION);
           assert.ok(result.secret);
@@ -122,7 +122,7 @@ describe('TokenManager', () => {
           .then(() => manager.info({ token: result.secret, encrypt: true }))
           .reflect()
           .then(inspectPromise(false))
-          .then(error => {
+          .then((error) => {
             assert.equal(error.message, 404);
             return null;
           })
@@ -138,7 +138,7 @@ describe('TokenManager', () => {
         })
         .reflect()
         .then(inspectPromise(false))
-        .tap(rejection => {
+        .tap((rejection) => {
           assert.equal(rejection.name, 'ValidationError');
           assert(/\[1\] "throttle" must be less than or equal to 3/.test(rejection.toString()));
           assert(/\[2\] "throttle" must be a boolean/.test(rejection.toString()));
@@ -157,7 +157,7 @@ describe('TokenManager', () => {
         .then(() => manager.create({ id: ID, action: ACTION }))
         .reflect()
         .then(inspectPromise(false))
-        .then(error => {
+        .then((error) => {
           assert.equal(error.message, '429');
           return null;
         })
@@ -176,7 +176,7 @@ describe('TokenManager', () => {
         .then(() => manager.create({ id: ID, action: ACTION }))
         .reflect()
         .then(inspectPromise())
-        .then(result => {
+        .then((result) => {
           assert.equal(result.id, ID);
           assert.equal(result.action, ACTION);
           assert.ok(result.secret);
@@ -194,7 +194,7 @@ describe('TokenManager', () => {
         })
         .reflect()
         .then(inspectPromise())
-        .then(result => {
+        .then((result) => {
           this.uid = result.uid;
           this.secret = result.secret;
           return null;
@@ -202,7 +202,7 @@ describe('TokenManager', () => {
         .then(() => manager.create({ id: ID, action: ACTION, regenerate: true }))
         .reflect()
         .then(inspectPromise())
-        .then(result => {
+        .then((result) => {
           this.newuid = result.uid;
           this.newsecret = result.secret;
           return null;
@@ -219,7 +219,7 @@ describe('TokenManager', () => {
         .then(() => manager.info({ token: this.newsecret, encrypt: true }))
         .reflect()
         .then(inspectPromise())
-        .then(result => {
+        .then((result) => {
           assert.notEqual(this.uid, result.uid);
           assert.equal(this.newuid, result.uid);
           assert.equal(ID, result.id);
@@ -239,7 +239,7 @@ describe('TokenManager', () => {
         })
         .reflect()
         .then(inspectPromise())
-        .then(result => {
+        .then((result) => {
           assert.equal(result.id, ID);
           assert.equal(result.action, ACTION);
           assert.ok(result.secret);
@@ -263,14 +263,14 @@ describe('TokenManager', () => {
         })
         .reflect()
         .then(inspectPromise())
-        .then(result => {
+        .then((result) => {
           assert.equal(result.id, ID);
           assert.equal(result.action, ACTION);
           assert.ok(result.secret);
           assert.ifError(result.uid);
           return manager.info({ id: result.id, action: result.action });
         })
-        .then(result => {
+        .then((result) => {
           assert.deepEqual(result.metadata, {
             random: ['10', 20, {}],
             bool: true,
@@ -295,7 +295,7 @@ describe('TokenManager', () => {
         })
         .reflect()
         .then(inspectPromise())
-        .then(result => {
+        .then((result) => {
           assert.equal(result.id, ID);
           assert.equal(result.action, ACTION);
           assert.ok(result.secret);
@@ -304,7 +304,7 @@ describe('TokenManager', () => {
 
           // make sure that secret consists only of passed alphabet
           const chars = 'abcd'.split('');
-          result.secret.split('').forEach(char => {
+          result.secret.split('').forEach((char) => {
             assert(chars.includes(char));
           });
 
@@ -323,7 +323,7 @@ describe('TokenManager', () => {
         })
         .reflect()
         .then(inspectPromise())
-        .then(result => {
+        .then((result) => {
           assert.equal(result.id, ID);
           assert.equal(result.action, ACTION);
           assert.ifError(result.uid);
@@ -342,7 +342,7 @@ describe('TokenManager', () => {
         })
         .reflect()
         .then(inspectPromise())
-        .then(result => {
+        .then((result) => {
           assert.equal(result.id, ID);
           assert.equal(result.action, ACTION);
           assert.ifError(result.secret);
@@ -361,7 +361,7 @@ describe('TokenManager', () => {
         })
         .reflect()
         .then(inspectPromise())
-        .then(result => {
+        .then((result) => {
           assert.equal(result.id, ID);
           assert.equal(result.action, ACTION);
           assert.ok(result.secret);
@@ -369,7 +369,7 @@ describe('TokenManager', () => {
         })
         .reflect()
         .then(inspectPromise())
-        .then(result => {
+        .then((result) => {
           assert.equal(result.id, ID);
           assert.equal(result.action, ACTION);
           assert.ok(result.secret);
@@ -394,7 +394,7 @@ describe('TokenManager', () => {
         })
         .reflect()
         .then(inspectPromise())
-        .then(result => {
+        .then((result) => {
           assert.equal(result.id, ID);
           assert.equal(result.action, ACTION);
           assert.ok(result.uid);
@@ -406,7 +406,7 @@ describe('TokenManager', () => {
         })
         .reflect()
         .then(inspectPromise())
-        .then(result => {
+        .then((result) => {
           assert.equal(result.id, ID);
           assert.equal(result.action, ACTION);
           assert.ok(result.uid);
@@ -433,7 +433,7 @@ describe('TokenManager', () => {
           .then(() => manager.regenerate({ id: ID, action: ACTION }))
           .reflect()
           .then(inspectPromise(false))
-          .then(error => {
+          .then((error) => {
             assert.equal(error.message, 404);
             return null;
           })
@@ -456,7 +456,7 @@ describe('TokenManager', () => {
           ))
           .reflect()
           .then(inspectPromise(false))
-          .then(error => {
+          .then((error) => {
             assert.equal(error.message, '409');
             return null;
           })
@@ -478,7 +478,7 @@ describe('TokenManager', () => {
           .then(() => manager.regenerate({ id: ID, action: ACTION }))
           .reflect()
           .then(inspectPromise())
-          .then(secret => {
+          .then((secret) => {
             assert.ok(/^[0-9]{6}$/i.test(secret));
             return null;
           })
@@ -496,7 +496,7 @@ describe('TokenManager', () => {
           .then(result => manager.verify(result.secret.replace(/j/, 'a')))
           .reflect()
           .then(inspectPromise(false))
-          .then(error => {
+          .then((error) => {
             assert.equal(error.message, 'invalid token');
             return null;
           })
@@ -512,7 +512,7 @@ describe('TokenManager', () => {
           .then(result => manager.verify(result.secret.slice(1)))
           .reflect()
           .then(inspectPromise(false))
-          .then(error => {
+          .then((error) => {
             assert.equal(error.message, 'invalid token');
             return null;
           })
@@ -532,7 +532,7 @@ describe('TokenManager', () => {
           }))
           .reflect()
           .then(inspectPromise(false))
-          .then(error => {
+          .then((error) => {
             assert.equal(error.message, `Sanity check failed for "id" failed: "another@mail.com" vs "${ID}"`);
             return null;
           })
@@ -550,7 +550,7 @@ describe('TokenManager', () => {
               .verify(result.secret)
               .reflect()
               .then(inspectPromise())
-              .tap(data => {
+              .tap((data) => {
                 assert.equal(data.id, ID);
                 assert.equal(data.action, ACTION);
                 assert.ok(data.uid);
@@ -560,8 +560,15 @@ describe('TokenManager', () => {
               .then(() => manager.verify(result.secret))
               .reflect()
               .then(inspectPromise(false))
-              .then(error => {
+              .then((error) => {
                 assert.equal(error.message, '404');
+
+                // furthermore, makes sure that it has additional error data
+                assert.equal(error.args.id, ID);
+                assert.equal(error.args.action, ACTION);
+                assert.ifError(error.args.uid);
+                assert.ok(error.args.token);
+
                 return null;
               })
           )
@@ -582,7 +589,7 @@ describe('TokenManager', () => {
             .verify({ id: ID, action: ACTION, token: result.secret })
             .reflect()
             .then(inspectPromise())
-            .tap(data => {
+            .tap((data) => {
               assert.equal(data.id, ID);
               assert.equal(data.action, ACTION);
               assert.ok(data.uid);
@@ -601,7 +608,7 @@ describe('TokenManager', () => {
           .then(result => manager.verify(result.secret, { erase: false }))
           .reflect()
           .then(inspectPromise())
-          .tap(result => {
+          .tap((result) => {
             assert.equal(result.id, ID);
             assert.equal(result.action, ACTION);
             assert.ifError(result.uid);
@@ -611,7 +618,7 @@ describe('TokenManager', () => {
           .then(result => manager.info({ id: ID, action: ACTION, token: result.secret, encrypt: false }))
           .reflect()
           .then(inspectPromise())
-          .tap(result => {
+          .tap((result) => {
             assert.equal(result.id, ID);
             assert.equal(result.action, ACTION);
             assert.ifError(result.uid);
@@ -631,7 +638,7 @@ describe('TokenManager', () => {
               .verify(result.secret, { erase: false })
               .reflect()
               .then(inspectPromise())
-              .tap(data => {
+              .tap((data) => {
                 assert.equal(data.id, ID);
                 assert.equal(data.action, ACTION);
                 assert.ifError(data.uid);
@@ -641,7 +648,7 @@ describe('TokenManager', () => {
               .then(() => manager.verify(result.secret))
               .reflect()
               .then(inspectPromise())
-              .tap(data => {
+              .tap((data) => {
                 assert.equal(data.id, ID);
                 assert.equal(data.action, ACTION);
                 assert.ifError(data.uid);
@@ -663,7 +670,7 @@ describe('TokenManager', () => {
           .then(() => manager.remove({ id: ID, action: ACTION }))
           .reflect()
           .then(inspectPromise())
-          .then(result => {
+          .then((result) => {
             assert.equal(result, '200');
             return null;
           })
@@ -678,7 +685,7 @@ describe('TokenManager', () => {
           .then(result => manager.remove(result.secret))
           .reflect()
           .then(inspectPromise())
-          .then(result => {
+          .then((result) => {
             assert.equal(result, '200');
             return null;
           })
@@ -694,7 +701,7 @@ describe('TokenManager', () => {
           .then(result => manager.remove({ uid: result.uid }))
           .reflect()
           .then(inspectPromise())
-          .then(result => {
+          .then((result) => {
             assert.equal(result, '200');
             return null;
           })
@@ -709,14 +716,14 @@ describe('TokenManager', () => {
           .then(() => manager.remove({ id: ID, action: ACTION }))
           .reflect()
           .then(inspectPromise())
-          .then(result => {
+          .then((result) => {
             assert.equal(result, '200');
             return null;
           })
           .then(() => manager.remove({ id: ID, action: ACTION }))
           .reflect()
           .then(inspectPromise(false))
-          .then(err => {
+          .then((err) => {
             assert.equal(err.message, 404);
             return null;
           })
@@ -735,7 +742,7 @@ describe('TokenManager', () => {
           ))
           .reflect()
           .then(inspectPromise(false))
-          .then(result => {
+          .then((result) => {
             assert.equal(result.message, '409');
             return null;
           })

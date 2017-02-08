@@ -9,7 +9,8 @@
     "test-integration": "./test/docker.sh",
     "lint": "eslint ./src",
     "compile": "babel ./src -d ./lib --copy-files",
-    "prepublish": "npm run compile"
+    "preversion": "npm run compile",
+    "postversion": "git push && npm run publish && git push --tags"
   },
   "repository": {
     "type": "git",

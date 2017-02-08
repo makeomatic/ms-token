@@ -19,7 +19,7 @@ services:
 
   tester:
     container_name: tester
-    image: makeomatic/node:7.2.1-tester
+    image: makeomatic/node:7.5.0-tester
     links:
       - redis
       - redis-monitor
