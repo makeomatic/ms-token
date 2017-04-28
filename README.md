@@ -1,5 +1,7 @@
 # Token Orchestrator
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/makeomatic/ms-token.svg)](https://greenkeeper.io/)
+
 [![Build Status](https://semaphoreci.com/api/v1/makeomatic/ms-token/branches/master/shields_badge.svg)](https://semaphoreci.com/makeomatic/ms-token)
 [![codecov](https://codecov.io/gh/makeomatic/ms-token/branch/master/graph/badge.svg)](https://codecov.io/gh/makeomatic/ms-token)
 

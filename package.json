@@ -40,7 +40,7 @@
     "babel-plugin-transform-object-rest-spread": "^6.20.2",
     "babel-plugin-transform-strict-mode": "^6.18.0",
     "babel-register": "^6.18.0",
-    "codecov": "^1.0.1",
+    "codecov": "^2.1.0",
     "eslint": "^3.12.2",
     "eslint-config-airbnb-base": "^11.0.0",
     "eslint-plugin-import": "^2.2.0",
@@ -48,7 +48,7 @@
     "eslint-plugin-promise": "^3.4.0",
     "ioredis": "^2.4.3",
     "isparta": "^4.0.0",
-    "istanbul": "=0.4.4",
+    "istanbul": "0.4.5",
     "mocha": "^3.2.0"
   },
   "dependencies": {
