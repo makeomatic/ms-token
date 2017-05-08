@@ -2,7 +2,11 @@
   "plugins": [
     "transform-strict-mode",
     "transform-class-properties",
-    "transform-es2015-destructuring",
-    "transform-object-rest-spread"
-  ]
+    ["transform-object-rest-spread", { "useBuiltIns": true }]
+  ],
+  "env": {
+    "test": {
+      "plugins": [ "istanbul" ]
+    }
+  }
 }
