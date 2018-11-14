@@ -1,4 +1,3 @@
-const mapValues = require('lodash/mapValues');
 const filter = require('lodash/filter');
 const get = require('lodash/get');
 const omit = require('lodash/omit');
@@ -26,13 +25,11 @@ class RedisBackend {
 
     // load scripts
     const cwd = path.join(__dirname, 'lua');
-    glob
-      .sync('*.lua', { cwd })
-      .forEach((script) => {
-        const name = path.basename(script, '.lua');
-        const lua = fs.readFileSync(path.join(cwd, script), 'utf8');
-        this.redis.defineCommand(name, { lua });
-      });
+    for (const script of glob.sync('*.lua', { cwd })) {
+      const name = path.basename(script, '.lua');
+      const lua = fs.readFileSync(path.join(cwd, script), 'utf8');
+      this.redis.defineCommand(name, { lua });
+    }
   }
 
   static RESERVED_PROPS = {
@@ -73,7 +70,9 @@ class RedisBackend {
   generateKey({ uid, id, action, token }) {
     if (uid) {
       return this.uid(uid);
-    } else if (token) {
+    }
+
+    if (token) {
       return this.secret(action, id, token);
     }
 
@@ -104,51 +103,43 @@ class RedisBackend {
       );
   }
 
-  regenerate(opts, updateSecret) {
+  async regenerate(opts, updateSecret) {
     const key = this.generateKey(opts);
+    const data = await this.redis.hgetall(key);
 
-    return this
-      .redis
-      .hgetall(key)
-      .then((data) => {
-        // missing
-        if (!data.settings || !data.secret) {
-          throw new Error(404);
-        }
+    // missing
+    if (!data.settings || !data.secret) {
+      throw new Error(404);
+    }
 
-        // definitions
-        const id = data.id;
-        const action = data.action;
-        const uid = data.uid;
-        const secretSettings = RedisBackend.deserialize(data.settings);
-        const oldSecret = data.secret;
-        const newSecret = updateSecret(id, action, uid, secretSettings);
+    // definitions
+    const { id, action, uid } = data;
+    const secretSettings = RedisBackend.deserialize(data.settings);
+    const oldSecret = data.secret;
+    const newSecret = updateSecret(id, action, uid, secretSettings);
 
-        // redis keys
-        const idKey = this.key(action, id);
+    // redis keys
+    const idKey = this.key(action, id);
 
-        // this is always present in case of regenerate
-        const uidKey = this.uid(uid);
-        const oldSecretKey = this.secret(action, id, oldSecret);
-        const newSecretKey = this.secret(action, id, newSecret);
+    // this is always present in case of regenerate
+    const uidKey = this.uid(uid);
+    const oldSecretKey = this.secret(action, id, oldSecret);
+    const newSecretKey = this.secret(action, id, newSecret);
 
-        return this.redis
-          .msTokenRegenerate(4, idKey, uidKey, oldSecretKey, newSecretKey, oldSecret, newSecret)
-          .return(newSecret);
-      });
+    await this.redis.msTokenRegenerate(4, idKey, uidKey, oldSecretKey, newSecretKey, oldSecret, newSecret);
+
+    return newSecret;
   }
 
   static _deserialize(output) {
     let length = 0;
-    const remapped = mapValues(output, (value, prop) => {
-      length += 1;
-      const transform = RedisBackend.RESERVED_PROPS[prop];
-      if (transform) {
-        return transform(value);
-      }
+    const remapped = Object.create(null);
+    const { RESERVED_PROPS, deserialize } = RedisBackend;
 
-      return RedisBackend.deserialize(value);
-    });
+    for (const [prop, value] of Object.entries(output)) {
+      length += 1;
+      remapped[prop] = (RESERVED_PROPS[prop] || deserialize)(value);
+    }
 
     return {
       value: remapped,
@@ -156,44 +147,37 @@ class RedisBackend {
     };
   }
 
-  info(opts) {
+  async info(opts) {
     const key = this.generateKey(opts);
+    const { length, value } = RedisBackend._deserialize(await this.redis.hgetall(key));
 
-    return this
-      .redis
-      .hgetall(key)
-      .then(RedisBackend._deserialize)
-      .then((data) => {
-        if (data.length === 0) {
-          throw new Error(404);
-        }
+    if (length === 0) {
+      throw new Error(404);
+    }
 
-        return data.value;
-      });
+    return value;
   }
 
   // this is generally the same as info
   // if you can access it - you've passed the challenge
   // top level call ensures that this is only accessed through `secret`
-  verify(opts, settings) {
+  async verify(opts, settings) {
     const key = this.generateKey(opts);
 
-    return this
-      .redis
-      .msVerifyToken(1, key, Date.now(), String(settings.erase))
-      .then((data) => {
-        const items = data.length;
-        const output = {};
+    const data = await this.redis
+      .msVerifyToken(1, key, Date.now(), String(settings.erase));
 
-        for (let i = 0; i < items; i += 2) {
-          const prop = data[i];
-          const value = data[i + 1];
-          const transform = RedisBackend.RESERVED_PROPS[prop] || RedisBackend.deserialize;
-          output[prop] = transform(value);
-        }
+    const items = data.length;
+    const output = {};
 
-        return output;
-      });
+    for (let i = 0; i < items; i += 2) {
+      const prop = data[i];
+      const value = data[i + 1];
+      const transform = RedisBackend.RESERVED_PROPS[prop] || RedisBackend.deserialize;
+      output[prop] = transform(value);
+    }
+
+    return output;
   }
 
   // private remove function,
@@ -213,21 +197,18 @@ class RedisBackend {
     return this.redis.msTokenRemove(keys.length, keys, secret);
   }
 
-  remove(opts) {
+  async remove(opts) {
     const key = this.generateKey(opts);
 
     // get data first
-    return this
-      .redis
-      .hgetall(key)
-      .then((data) => {
-        // dummy data check
-        if (!data.id) {
-          throw new Error(404);
-        }
+    const data = await this.redis.hgetall(key);
 
-        return this._remove(data);
-      });
+    // dummy data check
+    if (!data.id) {
+      throw new Error(404);
+    }
+
+    return this._remove(data);
   }
 }
 

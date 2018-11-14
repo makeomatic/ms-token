@@ -1,8 +1,7 @@
-const Promise = require('bluebird');
 const Joi = require('joi');
 const is = require('is');
-const crypto = require('../utils/crypto');
 const assert = require('assert');
+const crypto = require('../utils/crypto');
 
 // verify should be used to ensure secret values
 // otherwise use #info() to semantically say that it doesn't give
@@ -65,42 +64,17 @@ function parseInput(decrypt, _args, _opts) {
 }
 
 /**
- * Asserts that each prop is equal to the control one
- * @param  {Any} value
- * @param  {String} prop
- * @return {Void}
- */
-function assertEqual(prop) {
-  const { args, control } = this;
-  const value = args[prop];
-  const check = control[prop];
-  assert.equal(check, value, `Sanity check failed for "${prop}" failed: "${check}" vs "${value}"`);
-}
-
-/**
  * Makes sure that any opts.control options are equal
  * to decoded values in args
  * @param  {Object} args
  * @param  {Object} opts
  * @return {Object}
  */
-function assertControlOptions({ args, opts }) {
-  const control = opts.control;
-  const keys = Object.keys(control);
-  keys.forEach(assertEqual, { args, control });
-}
-
-/**
- * Verifies passed params via backend
- * @param  {Object} args
- * @param  {Object} opts
- * @return {Promise}
- */
-function verifyViaBackend({ args, opts }) {
-  return this
-    .verify(args, opts)
-    .bind(args)
-    .catch(enrichError);
+function assertControlOptions(args, opts) {
+  for (const [prop, check] of Object.entries(opts.control)) {
+    const value = args[prop];
+    assert.equal(check, value, `Sanity check failed for "${prop}" failed: "${check}" vs "${value}"`);
+  }
 }
 
 /**
@@ -109,11 +83,12 @@ function verifyViaBackend({ args, opts }) {
  * @param  {Object} [_opts={}]
  * @return {Promise}
  */
-module.exports = function create(_args, _opts = {}) {
-  return Promise
-    .resolve([this.decrypt, _args, _opts])
-    .spread(parseInput)
-    .tap(assertControlOptions)
-    .bind(this.backend)
-    .then(verifyViaBackend);
+module.exports = async function create(_args, _opts = {}) {
+  const { args, opts } = parseInput(this.decrypt, _args, _opts);
+  assertControlOptions(args, opts);
+  try {
+    return await this.backend.verify(args, opts);
+  } catch (e) {
+    return enrichError.call(args, e);
+  }
 };

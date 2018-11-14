@@ -1,4 +1,3 @@
-const Promise = require('bluebird');
 const Joi = require('joi');
 const crypto = require('../utils/crypto');
 
@@ -19,11 +18,11 @@ const schema = Joi.alternatives()
   );
 
 // helper function used to generate new secret
-const generateSecret = encrypt => (id, action, uid, secret) =>
-  crypto.secret(encrypt, secret, { id, action, uid });
+const generateSecret = encrypt => (id, action, uid, secret) => (
+  crypto.secret(encrypt, secret, { id, action, uid })
+);
 
-module.exports = function info(args) {
-  return Promise
-    .try(() => Joi.attempt(args, schema))
-    .then(opts => this.backend.regenerate(opts, generateSecret(this.encrypt)));
+module.exports = async function info(args) {
+  const opts = Joi.attempt(args, schema);
+  return this.backend.regenerate(opts, generateSecret(this.encrypt));
 };

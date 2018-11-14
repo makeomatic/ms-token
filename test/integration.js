@@ -32,225 +32,172 @@ describe('TokenManager', () => {
       manager = new TokenManager(opts);
     });
 
+    after('stop redis', async () => {
+      await redis.disconnect();
+    });
+
     beforeEach('cleans db', () => redis.flushdb());
 
     describe('#create & #info', () => {
-      it('throw when id is not specified', () => manager
-        .create({
-          action: ACTION,
-        })
-        .reflect()
-        .then(inspectPromise(false))
-        .then((rejection) => {
-          assert.equal(rejection.name, 'ValidationError');
-          assert(/\[1\] "id" is required/.test(rejection.toString()));
-          return null;
-        })
-      );
+      it('throw when id is not specified', async () => {
+        await assert.rejects(manager.create({ action: ACTION }), (e) => {
+          assert(e.name === 'ValidationError');
+          assert(/\[1\] "id" is required/m.test(e.toString()), e.toString());
+          return true;
+        });
+      });
 
-      it('throw when action is not specified', () => manager
-        .create({
-          id: ID,
-        })
-        .reflect()
-        .then(inspectPromise(false))
-        .then((rejection) => {
-          assert.equal(rejection.name, 'ValidationError');
-          assert(/\[1\] "action" is required/.test(rejection.toString()));
-          return null;
-        })
-      );
+      it('throw when action is not specified', async () => {
+        await assert.rejects(manager.create({ id: ID }), (rejection) => {
+          assert(rejection.name === 'ValidationError');
+          assert(/\[1\] "action" is required/m.test(rejection.toString()));
+          return true;
+        });
+      });
 
-      it('throw when trying to use regenerate & secret: false', () => manager
-        .create({
+      it('throw when trying to use regenerate & secret: false', async () => {
+        await assert.rejects(manager.create({
           id: ID,
           action: ACTION,
           regenerate: true,
           secret: false,
-        })
-        .reflect()
-        .then(inspectPromise(false))
-        .then((rejection) => {
-          assert.equal(rejection.name, 'ValidationError');
-          assert(/\[1\] "regenerate" must be one of \[false\]/.test(rejection.toString()));
-          return null;
-        })
-      );
+        }), (rejection) => {
+          assert(rejection.name === 'ValidationError');
+          assert(/\[1\] "regenerate" must be one of \[false\]/m.test(rejection.toString()));
+          return true;
+        });
+      });
 
-      it('creates timeless token for supplied id/action', () => manager
-        .create({
+      it('creates timeless token for supplied id/action', async () => {
+        const result = await manager.create({
           id: ID,
           action: ACTION,
-        })
-        .reflect()
-        .then(inspectPromise())
-        .tap((result) => {
-          assert.equal(result.id, ID);
-          assert.equal(result.action, ACTION);
-          assert.ok(result.secret);
-          assert.ifError(result.uid);
-        })
-        .then(result => manager.info({ token: result.secret, encrypt: true }))
-        .tap((response) => {
-          assert.equal(response.id, ID);
-          assert.equal(response.action, ACTION);
-          // secret should've been saved
-          assert.ok(response.secret);
-          // uid should be falsy
-          assert.ifError(response.uid);
-        })
-      );
+        });
 
-      it('creates timed token for supplied id/action, expires as required', () => manager
-        .create({
+        assert.equal(result.id, ID);
+        assert.equal(result.action, ACTION);
+        assert.ok(result.secret);
+        assert.ok(!result.uid);
+
+        const response = await manager.info({ token: result.secret, encrypt: true });
+
+        assert.equal(response.id, ID);
+        assert.equal(response.action, ACTION);
+        // secret should've been saved
+        assert.ok(response.secret);
+        // uid should be falsy
+        assert.ok(!response.uid);
+      });
+
+      it('creates timed token for supplied id/action, expires as required', async () => {
+        const result = await manager.create({
           id: ID,
           action: ACTION,
           ttl: 3,
-        })
-        .reflect()
-        .then(inspectPromise())
-        .tap((result) => {
-          assert.equal(result.id, ID);
-          assert.equal(result.action, ACTION);
-          assert.ok(result.secret);
-        })
-        .then(result => manager
-          .info({ token: result.secret, encrypt: true })
-          .reflect()
-          .tap(inspectPromise())
-          .delay(3000)
-          .then(() => manager.info({ token: result.secret, encrypt: true }))
-          .reflect()
-          .then(inspectPromise(false))
-          .then((error) => {
-            assert.equal(error.message, 404);
-            return null;
-          })
-        )
-      );
+        });
 
-      it('does not allow throttling to be set higher than ttl', () => manager
-        .create({
+        assert.equal(result.id, ID);
+        assert.equal(result.action, ACTION);
+        assert.ok(result.secret);
+
+        await manager.info({ token: result.secret, encrypt: true });
+        await Promise.delay(3100);
+
+        await assert.rejects(manager.info({ token: result.secret, encrypt: true }), {
+          message: '404',
+        });
+      });
+
+      it('does not allow throttling to be set higher than ttl', async () => {
+        await assert.rejects(manager.create({
           id: ID,
           action: ACTION,
           ttl: 3,
           throttle: 10,
-        })
-        .reflect()
-        .then(inspectPromise(false))
-        .tap((rejection) => {
+        }), (rejection) => {
           assert.equal(rejection.name, 'ValidationError');
-          assert(/\[1\] "throttle" must be less than or equal to 3/.test(rejection.toString()));
-          assert(/\[2\] "throttle" must be a boolean/.test(rejection.toString()));
-        })
-      );
+          assert(/\[1\] "throttle" must be less than or equal to 3/m.test(rejection.toString()));
+          assert(/\[2\] "throttle" must be a boolean/m.test(rejection.toString()));
+          return true;
+        });
+      });
 
-      it('does not allow recreating same token during throttling', () => manager
-        .create({
+      it('does not allow recreating same token during throttling', async () => {
+        await manager.create({
           id: ID,
           action: ACTION,
           ttl: 10,
           throttle: true,
-        })
-        .reflect()
-        .then(inspectPromise())
-        .then(() => manager.create({ id: ID, action: ACTION }))
-        .reflect()
-        .then(inspectPromise(false))
-        .then((error) => {
-          assert.equal(error.message, '429');
-          return null;
-        })
-      );
+        });
 
-      it('allows to recreate token after throttle expired', () => manager
-        .create({
+        await assert.rejects(manager.create({ id: ID, action: ACTION }), (error) => {
+          assert.equal(error.message, '429');
+          return true;
+        });
+      });
+
+      it('allows to recreate token after throttle expired', async () => {
+        await manager.create({
           id: ID,
           action: ACTION,
           ttl: 3,
           throttle: 1,
-        })
-        .reflect()
-        .then(inspectPromise())
-        .delay(1000)
-        .then(() => manager.create({ id: ID, action: ACTION }))
-        .reflect()
-        .then(inspectPromise())
-        .then((result) => {
-          assert.equal(result.id, ID);
-          assert.equal(result.action, ACTION);
-          assert.ok(result.secret);
-          assert.ifError(result.uid);
+        });
 
-          return null;
-        })
-      );
+        await Promise.delay(1000);
+        const result = await manager.create({ id: ID, action: ACTION });
 
-      it('allows to recreate token, and erases old associated token before that', () => manager
-        .create({
+        assert.equal(result.id, ID);
+        assert.equal(result.action, ACTION);
+        assert.ok(result.secret);
+        assert.ok(!result.uid);
+      });
+
+      it('allows to recreate token, and erases old associated token before that', async () => {
+        const result = await manager.create({
           id: ID,
           action: ACTION,
           regenerate: true,
-        })
-        .reflect()
-        .then(inspectPromise())
-        .then((result) => {
-          this.uid = result.uid;
-          this.secret = result.secret;
-          return null;
-        })
-        .then(() => manager.create({ id: ID, action: ACTION, regenerate: true }))
-        .reflect()
-        .then(inspectPromise())
-        .then((result) => {
-          this.newuid = result.uid;
-          this.newsecret = result.secret;
-          return null;
-        })
-        .then(() => manager.info({ uid: this.uid }))
-        .reflect()
-        .then(inspectPromise(false))
-        .then(() => manager.info({ token: this.secret, encrypt: true }))
-        .reflect()
-        .then(inspectPromise(false))
-        .then(() => manager.info({ uid: this.newuid }))
-        .reflect()
-        .then(inspectPromise())
-        .then(() => manager.info({ token: this.newsecret, encrypt: true }))
-        .reflect()
-        .then(inspectPromise())
-        .then((result) => {
-          assert.notEqual(this.uid, result.uid);
-          assert.equal(this.newuid, result.uid);
-          assert.equal(ID, result.id);
-          assert.equal(ACTION, result.action);
-          assert.ok(result.created);
-          assert.ok(result.related);
-          assert.equal(result.related.length, 3);
-          return null;
-        })
-      );
+        });
 
-      it('if regenerate is supplied, uid is generated', () => manager
-        .create({
+        this.uid = result.uid;
+        this.secret = result.secret;
+
+        const datum = await manager.create({ id: ID, action: ACTION, regenerate: true });
+
+        this.newuid = datum.uid;
+        this.newsecret = datum.secret;
+
+        await assert.rejects(manager.info({ uid: this.uid }));
+        await assert.rejects(manager.info({ token: this.secret, encrypt: true }));
+        await manager.info({ uid: this.newuid });
+
+        const info = await manager.info({ token: this.newsecret, encrypt: true });
+
+        assert.notEqual(this.uid, info.uid);
+        assert.equal(this.newuid, info.uid);
+        assert.equal(ID, info.id);
+        assert.equal(ACTION, info.action);
+        assert.ok(info.created);
+        assert.ok(info.related);
+        assert.equal(info.related.length, 3);
+      });
+
+      it('if regenerate is supplied, uid is generated', async () => {
+        const result = await manager.create({
           id: ID,
           action: ACTION,
           regenerate: true,
-        })
-        .reflect()
-        .then(inspectPromise())
-        .then((result) => {
-          assert.equal(result.id, ID);
-          assert.equal(result.action, ACTION);
-          assert.ok(result.secret);
-          assert.ok(result.uid);
+        });
 
-          return null;
-        })
-      );
+        assert.equal(result.id, ID);
+        assert.equal(result.action, ACTION);
+        assert.ok(result.secret);
+        assert.ok(result.uid);
+      });
 
-      it('if metadata is supplied, it is saved and then restored', () => manager
-        .create({
+      it('if metadata is supplied, it is saved and then restored', async () => {
+        const result = await manager.create({
           id: ID,
           action: ACTION,
           metadata: {
@@ -260,31 +207,26 @@ describe('TokenManager', () => {
             arr: [],
             obj: { coarse: true },
           },
-        })
-        .reflect()
-        .then(inspectPromise())
-        .then((result) => {
-          assert.equal(result.id, ID);
-          assert.equal(result.action, ACTION);
-          assert.ok(result.secret);
-          assert.ifError(result.uid);
-          return manager.info({ id: result.id, action: result.action });
-        })
-        .then((result) => {
-          assert.deepEqual(result.metadata, {
-            random: ['10', 20, {}],
-            bool: true,
-            num: 32,
-            arr: [],
-            obj: { coarse: true },
-          });
+        });
 
-          return null;
-        })
-      );
+        assert.equal(result.id, ID);
+        assert.equal(result.action, ACTION);
+        assert.ok(result.secret);
+        assert.ok(!result.uid);
 
-      it('generates custom secret, type alphabet', () => manager
-        .create({
+        const info = await manager.info({ id: result.id, action: result.action });
+
+        assert.deepEqual(info.metadata, {
+          random: ['10', 20, {}],
+          bool: true,
+          num: 32,
+          arr: [],
+          obj: { coarse: true },
+        });
+      });
+
+      it('generates custom secret, type alphabet', async () => {
+        const result = await manager.create({
           action: ACTION,
           id: ID,
           secret: {
@@ -292,93 +234,76 @@ describe('TokenManager', () => {
             alphabet: 'abcd',
             length: 10,
           },
-        })
-        .reflect()
-        .then(inspectPromise())
-        .then((result) => {
-          assert.equal(result.id, ID);
-          assert.equal(result.action, ACTION);
-          assert.ok(result.secret);
-          assert.ifError(result.uid);
-          assert.equal(result.secret.length, 10);
+        });
 
-          // make sure that secret consists only of passed alphabet
-          const chars = 'abcd'.split('');
-          result.secret.split('').forEach((char) => {
-            assert(chars.includes(char));
-          });
+        assert.equal(result.id, ID);
+        assert.equal(result.action, ACTION);
+        assert.ok(result.secret);
+        assert.ok(!result.uid);
+        assert.equal(result.secret.length, 10);
 
-          return null;
-        })
-      );
+        // make sure that secret consists only of passed alphabet
+        const chars = 'abcd'.split('');
+        result.secret.split('').forEach((char) => {
+          assert(chars.includes(char));
+        });
+      });
 
-      it('generates custom secret, type number', () => manager
-        .create({
+      it('generates custom secret, type number', async () => {
+        const result = await manager.create({
           action: ACTION,
           id: ID,
           secret: {
             type: 'number',
             length: 6,
           },
-        })
-        .reflect()
-        .then(inspectPromise())
-        .then((result) => {
-          assert.equal(result.id, ID);
-          assert.equal(result.action, ACTION);
-          assert.ifError(result.uid);
+        });
 
-          // contains only numbers
-          assert.ok(/^[0-9]{6}$/.test(result.secret));
-          return null;
-        })
-      );
+        assert.equal(result.id, ID);
+        assert.equal(result.action, ACTION);
+        assert.ok(!result.uid);
 
-      it('does not generate secret', () => manager
-        .create({
+        // contains only numbers
+        assert.ok(/^[0-9]{6}$/.test(result.secret));
+      });
+
+      it('does not generate secret', async () => {
+        const result = await manager.create({
           action: ACTION,
           id: ID,
           secret: false,
-        })
-        .reflect()
-        .then(inspectPromise())
-        .then((result) => {
-          assert.equal(result.id, ID);
-          assert.equal(result.action, ACTION);
-          assert.ifError(result.secret);
-          return null;
-        })
-      );
+        });
 
-      it('able to get info via unencrypted secret', () => manager
-        .create({
+        assert.equal(result.id, ID);
+        assert.equal(result.action, ACTION);
+        assert.ok(!result.secret);
+      });
+
+      it('able to get info via unencrypted secret', async () => {
+        const result = await manager.create({
           action: ACTION,
           id: ID,
           secret: {
             type: 'uuid',
             encrypt: false,
           },
-        })
-        .reflect()
-        .then(inspectPromise())
-        .then((result) => {
-          assert.equal(result.id, ID);
-          assert.equal(result.action, ACTION);
-          assert.ok(result.secret);
-          return manager.info({ id: ID, action: ACTION, token: result.secret, encrypt: false });
-        })
-        .reflect()
-        .then(inspectPromise())
-        .then((result) => {
-          assert.equal(result.id, ID);
-          assert.equal(result.action, ACTION);
-          assert.ok(result.secret);
-          return null;
-        })
-      );
+        });
 
-      it('uses all options, combined', () => manager
-        .create({
+        assert.equal(result.id, ID);
+        assert.equal(result.action, ACTION);
+        assert.ok(result.secret);
+
+        const info = await manager.info({
+          id: ID, action: ACTION, token: result.secret, encrypt: false,
+        });
+
+        assert.equal(info.id, ID);
+        assert.equal(info.action, ACTION);
+        assert.ok(info.secret);
+      });
+
+      it('uses all options, combined', async () => {
+        const result = await manager.create({
           action: ACTION,
           id: ID,
           ttl: 3,
@@ -391,362 +316,272 @@ describe('TokenManager', () => {
             encrypt: false,
           },
           regenerate: true,
-        })
-        .reflect()
-        .then(inspectPromise())
-        .then((result) => {
-          assert.equal(result.id, ID);
-          assert.equal(result.action, ACTION);
-          assert.ok(result.uid);
-          assert.ok(result.secret);
+        });
 
-          // unencrypted uuid.v4
-          assert.ok(/^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i.test(result.secret));
-          return manager.info({ uid: result.uid });
-        })
-        .reflect()
-        .then(inspectPromise())
-        .then((result) => {
-          assert.equal(result.id, ID);
-          assert.equal(result.action, ACTION);
-          assert.ok(result.uid);
-          assert.ok(result.secret);
-          assert.ok(/^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i.test(result.secret));
-          assert.deepEqual(result.metadata, {
-            encrypt: 'me',
-          });
-          return null;
-        })
-      );
+        assert.equal(result.id, ID);
+        assert.equal(result.action, ACTION);
+        assert.ok(result.uid);
+        assert.ok(result.secret);
+
+        // unencrypted uuid.v4
+        assert.ok(/^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i.test(result.secret));
+        const info = await manager.info({ uid: result.uid });
+
+        assert.equal(info.id, ID);
+        assert.equal(info.action, ACTION);
+        assert.ok(info.uid);
+        assert.ok(info.secret);
+        assert.ok(/^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i.test(info.secret));
+        assert.deepEqual(info.metadata, {
+          encrypt: 'me',
+        });
+      });
     });
 
     describe('#regenerate', () => {
-      it('throws when trying to regenerate token with no secret settings', () =>
-        manager
-          .create({
-            id: ID,
-            action: ACTION,
-            secret: false,
-          })
-          .reflect()
-          .then(inspectPromise())
-          .then(() => manager.regenerate({ id: ID, action: ACTION }))
-          .reflect()
-          .then(inspectPromise(false))
-          .then((error) => {
-            assert.equal(error.message, 404);
-            return null;
-          })
-      );
+      it('throws when trying to regenerate token with no secret settings', async () => {
+        await manager.create({
+          id: ID,
+          action: ACTION,
+          secret: false,
+        });
 
-      it('throws when trying to regenerate token concurrently', () =>
-        manager
-          .create({
-            id: ID,
-            action: ACTION,
-            regenerate: true,
-          })
-          .reflect()
-          .then(inspectPromise())
-          .then(() => Promise.join(
-            // would succeed
-            manager.regenerate({ id: ID, action: ACTION }),
-            // would fail
-            manager.regenerate({ id: ID, action: ACTION })
-          ))
-          .reflect()
-          .then(inspectPromise(false))
-          .then((error) => {
-            assert.equal(error.message, '409');
-            return null;
-          })
-      );
+        await assert.rejects(manager.regenerate({ id: ID, action: ACTION }), (error) => {
+          assert.equal(error.message, 404);
+          return true;
+        });
+      });
 
-      it('regenerates numeric secret', () =>
-        manager
-          .create({
-            id: ID,
-            action: ACTION,
-            regenerate: true,
-            secret: {
-              type: 'number',
-              length: 6,
-            },
-          })
-          .reflect()
-          .then(inspectPromise())
-          .then(() => manager.regenerate({ id: ID, action: ACTION }))
-          .reflect()
-          .then(inspectPromise())
-          .then((secret) => {
-            assert.ok(/^[0-9]{6}$/i.test(secret));
-            return null;
-          })
-      );
+      it('throws when trying to regenerate token concurrently', async () => {
+        await manager.create({
+          id: ID,
+          action: ACTION,
+          regenerate: true,
+        });
+
+        await assert.rejects(Promise.all([
+          manager.regenerate({ id: ID, action: ACTION }),
+          manager.regenerate({ id: ID, action: ACTION }),
+        ]), (error) => {
+          assert.equal(error.message, '409');
+          return true;
+        });
+      });
+
+      it('regenerates numeric secret', async () => {
+        await manager.create({
+          id: ID,
+          action: ACTION,
+          regenerate: true,
+          secret: {
+            type: 'number',
+            length: 6,
+          },
+        });
+
+        const secret = await manager.regenerate({ id: ID, action: ACTION });
+        assert.ok(/^[0-9]{6}$/i.test(secret));
+      });
     });
 
     describe('#verify', () => {
-      it('rejects miscomposed secret', () =>
-        manager
-          .create({
-            id: ID,
-            action: ACTION,
-            regenerate: true,
-          })
-          .then(result => manager.verify(result.secret.replace(/j/, 'a')))
-          .reflect()
-          .then(inspectPromise(false))
-          .then((error) => {
-            assert.equal(error.message, 'invalid token');
-            return null;
-          })
-      );
+      it('rejects miscomposed secret', async () => {
+        const result = await manager.create({
+          id: ID,
+          action: ACTION,
+          regenerate: true,
+        });
 
-      it('rejects invalid secret', () =>
-        manager
-          .create({
-            id: ID,
-            action: ACTION,
-            regenerate: true,
-          })
-          .then(result => manager.verify(result.secret.slice(1)))
-          .reflect()
-          .then(inspectPromise(false))
-          .then((error) => {
-            assert.equal(error.message, 'invalid token');
-            return null;
-          })
-      );
+        await assert.rejects(manager.verify(result.secret.replace(/j/, 'a')), (error) => {
+          assert.equal(error.message, 'invalid token');
+          return true;
+        });
+      });
 
-      it('rejects valid secret when using it for another user', () =>
-        manager
-          .create({
-            id: ID,
-            action: ACTION,
-          })
-          .then(result => manager.verify(result.secret, {
-            control: {
-              id: 'another@mail.com',
-              action: 'another-namespace',
-            },
-          }))
-          .reflect()
-          .then(inspectPromise(false))
-          .then((error) => {
-            assert.equal(error.message, `Sanity check failed for "id" failed: "another@mail.com" vs "${ID}"`);
-            return null;
-          })
-      );
+      it('rejects invalid secret', async () => {
+        const result = await manager.create({
+          id: ID,
+          action: ACTION,
+          regenerate: true,
+        });
 
-      it('completes challenge, erases it by default', () =>
-        manager
-          .create({
-            id: ID,
-            action: ACTION,
-            regenerate: true,
-          })
-          .then(result =>
-            manager
-              .verify(result.secret)
-              .reflect()
-              .then(inspectPromise())
-              .tap((data) => {
-                assert.equal(data.id, ID);
-                assert.equal(data.action, ACTION);
-                assert.ok(data.uid);
-                assert.ok(data.verified);
-                assert.equal(data.isFirstVerification, true);
-              })
-              .then(() => manager.verify(result.secret))
-              .reflect()
-              .then(inspectPromise(false))
-              .then((error) => {
-                assert.equal(error.message, '404');
+        await assert.rejects(manager.verify(result.secret.slice(1)), (error) => {
+          assert.equal(error.message, 'invalid token');
+          return true;
+        });
+      });
 
-                // furthermore, makes sure that it has additional error data
-                assert.equal(error.args.id, ID);
-                assert.equal(error.args.action, ACTION);
-                assert.ifError(error.args.uid);
-                assert.ok(error.args.token);
+      it('rejects valid secret when using it for another user', async () => {
+        const result = await manager.create({
+          id: ID,
+          action: ACTION,
+        });
 
-                return null;
-              })
-          )
-      );
+        await assert.rejects(manager.verify(result.secret, {
+          control: {
+            id: 'another@mail.com',
+            action: 'another-namespace',
+          },
+        }), (error) => {
+          assert.equal(error.message, `Sanity check failed for "id" failed: "another@mail.com" vs "${ID}"`);
+          return true;
+        });
+      });
 
-      it('completes challenge with unencrypted secret', () =>
-        manager
-          .create({
-            id: ID,
-            action: ACTION,
-            regenerate: true,
-            secret: {
-              type: 'number',
-              length: 10,
-            },
-          })
-          .then(result => manager
-            .verify({ id: ID, action: ACTION, token: result.secret })
-            .reflect()
-            .then(inspectPromise())
-            .tap((data) => {
-              assert.equal(data.id, ID);
-              assert.equal(data.action, ACTION);
-              assert.ok(data.uid);
-              assert.ok(data.verified);
-              assert.equal(data.isFirstVerification, true);
-            })
-          )
-      );
+      it('completes challenge, erases it by default', async () => {
+        const result = await manager.create({
+          id: ID,
+          action: ACTION,
+          regenerate: true,
+        });
 
-      it('completes challenge, does not erase it with settings', () =>
-        manager
-          .create({
-            id: ID,
-            action: ACTION,
-          })
-          .then(result => manager.verify(result.secret, { erase: false }))
-          .reflect()
-          .then(inspectPromise())
-          .tap((result) => {
-            assert.equal(result.id, ID);
-            assert.equal(result.action, ACTION);
-            assert.ifError(result.uid);
-            assert.ok(result.verified);
-            assert.ok(result.isFirstVerification);
-          })
-          .then(result => manager.info({ id: ID, action: ACTION, token: result.secret, encrypt: false }))
-          .reflect()
-          .then(inspectPromise())
-          .tap((result) => {
-            assert.equal(result.id, ID);
-            assert.equal(result.action, ACTION);
-            assert.ifError(result.uid);
-            assert.ok(result.verified);
-            assert.ifError(result.isFirstVerification);
-          })
-      );
+        const data = await manager.verify(result.secret);
 
-      it('completes challenge, verifies it for the second time', () =>
-        manager
-          .create({
-            id: ID,
-            action: ACTION,
-          })
-          .then(result =>
-            manager
-              .verify(result.secret, { erase: false })
-              .reflect()
-              .then(inspectPromise())
-              .tap((data) => {
-                assert.equal(data.id, ID);
-                assert.equal(data.action, ACTION);
-                assert.ifError(data.uid);
-                assert.ok(data.verified);
-                assert.ok(data.isFirstVerification);
-              })
-              .then(() => manager.verify(result.secret))
-              .reflect()
-              .then(inspectPromise())
-              .tap((data) => {
-                assert.equal(data.id, ID);
-                assert.equal(data.action, ACTION);
-                assert.ifError(data.uid);
-                assert.ok(data.verified);
-                assert.ifError(data.isFirstVerification);
-                return null;
-              })
-          )
-      );
+        assert.equal(data.id, ID);
+        assert.equal(data.action, ACTION);
+        assert.ok(data.uid);
+        assert.ok(data.verified);
+        assert.equal(data.isFirstVerification, true);
+
+        await assert.rejects(manager.verify(result.secret), (error) => {
+          assert.equal(error.message, '404');
+
+          // furthermore, makes sure that it has additional error data
+          assert.equal(error.args.id, ID);
+          assert.equal(error.args.action, ACTION);
+          assert.ok(!error.args.uid);
+          assert.ok(error.args.token);
+
+          return true;
+        });
+      });
+
+      it('completes challenge with unencrypted secret', async () => {
+        const result = await manager.create({
+          id: ID,
+          action: ACTION,
+          regenerate: true,
+          secret: {
+            type: 'number',
+            length: 10,
+          },
+        });
+
+        const data = await manager.verify({ id: ID, action: ACTION, token: result.secret });
+
+        assert.equal(data.id, ID);
+        assert.equal(data.action, ACTION);
+        assert.ok(data.uid);
+        assert.ok(data.verified);
+        assert.equal(data.isFirstVerification, true);
+      });
+
+      it('completes challenge, does not erase it with settings', async () => {
+        const result = await manager.create({
+          id: ID,
+          action: ACTION,
+        });
+
+        const verify = await manager.verify(result.secret, { erase: false });
+
+        assert.equal(verify.id, ID);
+        assert.equal(verify.action, ACTION);
+        assert.ok(!verify.uid);
+        assert.ok(verify.verified);
+        assert.ok(verify.isFirstVerification);
+
+        const info = await manager.info({
+          id: ID, action: ACTION, token: verify.secret, encrypt: false,
+        });
+
+        assert.equal(info.id, ID);
+        assert.equal(info.action, ACTION);
+        assert.ok(!info.uid);
+        assert.ok(info.verified);
+        assert.ok(!info.isFirstVerification);
+      });
+
+      it('completes challenge, verifies it for the second time', async () => {
+        const result = await manager.create({
+          id: ID,
+          action: ACTION,
+        });
+
+        const data = await manager.verify(result.secret, { erase: false });
+
+        assert.equal(data.id, ID);
+        assert.equal(data.action, ACTION);
+        assert.ok(!data.uid);
+        assert.ok(data.verified);
+        assert.ok(data.isFirstVerification);
+
+        const verify = await manager.verify(result.secret);
+
+        assert.equal(verify.id, ID);
+        assert.equal(verify.action, ACTION);
+        assert.ok(!verify.uid);
+        assert.ok(verify.verified);
+        assert.ok(!verify.isFirstVerification);
+      });
     });
 
     describe('#remove', () => {
-      it('removes existing secret if it has not changed by id+action', () =>
-        manager
-          .create({
-            id: ID,
-            action: ACTION,
-          })
-          .then(() => manager.remove({ id: ID, action: ACTION }))
-          .reflect()
-          .then(inspectPromise())
-          .then((result) => {
-            assert.equal(result, '200');
-            return null;
-          })
-      );
+      it('removes existing secret if it has not changed by id+action', async () => {
+        await manager.create({
+          id: ID,
+          action: ACTION,
+        });
 
-      it('removes existing secret if it has not changed by encrypted secret', () =>
-        manager
-          .create({
-            id: ID,
-            action: ACTION,
-          })
-          .then(result => manager.remove(result.secret))
-          .reflect()
-          .then(inspectPromise())
-          .then((result) => {
-            assert.equal(result, '200');
-            return null;
-          })
-      );
+        const result = await manager.remove({ id: ID, action: ACTION });
+        assert.equal(result, '200');
+      });
 
-      it('removes existing secret if it has not changed by uid', () =>
-        manager
-          .create({
-            id: ID,
-            action: ACTION,
-            regenerate: true,
-          })
-          .then(result => manager.remove({ uid: result.uid }))
-          .reflect()
-          .then(inspectPromise())
-          .then((result) => {
-            assert.equal(result, '200');
-            return null;
-          })
-      );
+      it('removes existing secret if it has not changed by encrypted secret', async () => {
+        const result = await manager.create({
+          id: ID,
+          action: ACTION,
+        });
 
-      it('fails to remove non-existing secret', () =>
-        manager
-          .create({
-            id: ID,
-            action: ACTION,
-          })
-          .then(() => manager.remove({ id: ID, action: ACTION }))
-          .reflect()
-          .then(inspectPromise())
-          .then((result) => {
-            assert.equal(result, '200');
-            return null;
-          })
-          .then(() => manager.remove({ id: ID, action: ACTION }))
-          .reflect()
-          .then(inspectPromise(false))
-          .then((err) => {
-            assert.equal(err.message, 404);
-            return null;
-          })
-      );
+        assert.equal(await manager.remove(result.secret), '200');
+      });
 
-      it('fails to remove changed secret', () =>
-        manager
-          .create({
-            id: ID,
-            action: ACTION,
-            regenerate: true,
-          })
-          .then(result => Promise.join(
-            manager.regenerate({ uid: result.uid }),
-            manager.remove({ uid: result.uid })
-          ))
-          .reflect()
-          .then(inspectPromise(false))
-          .then((result) => {
-            assert.equal(result.message, '409');
-            return null;
-          })
-      );
+      it('removes existing secret if it has not changed by uid', async () => {
+        const result = await manager.create({
+          id: ID,
+          action: ACTION,
+          regenerate: true,
+        });
+
+        assert.equal(await manager.remove({ uid: result.uid }), '200');
+      });
+
+      it('fails to remove non-existing secret', async () => {
+        await manager.create({
+          id: ID,
+          action: ACTION,
+        });
+
+        await assert.equal(await manager.remove({ id: ID, action: ACTION }), '200');
+
+        await assert.rejects(manager.remove({ id: ID, action: ACTION }), {
+          message: '404',
+        });
+      });
+
+      it('fails to remove changed secret', async () => {
+        const result = await manager.create({
+          id: ID,
+          action: ACTION,
+          regenerate: true,
+        });
+
+        await assert.rejects(Promise.join(
+          manager.regenerate({ uid: result.uid }),
+          manager.remove({ uid: result.uid })
+        ), {
+          message: '409',
+        });
+      });
     });
   });
 });

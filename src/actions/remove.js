@@ -1,4 +1,3 @@
-const Promise = require('bluebird');
 const Joi = require('joi');
 const is = require('is');
 const crypto = require('../utils/crypto');
@@ -27,32 +26,30 @@ const schema = Joi.alternatives()
     })
   );
 
-module.exports = function info(args) {
-  return Promise
-    .try(() => Joi.attempt(
-      is.string(args) ? crypto.extract(this.decrypt, args) : args,
-      schema
-    ))
-    .then((opts) => {
-      const { uid, action, id, token } = opts;
+module.exports = async function info(args) {
+  const opts = Joi.attempt(
+    is.string(args) ? crypto.extract(this.decrypt, args) : args,
+    schema
+  );
 
-      // form argv for #info
-      const argv = {};
+  const { uid, action, id, token } = opts;
 
-      // we have uid
-      if (uid) {
-        argv.uid = uid;
-      // we have just a secret, so we must have id & action, too
-      } else if (token) {
-        argv.id = id;
-        argv.action = action;
-        argv.token = token;
-      // do plain extraction by id + action
-      } else {
-        argv.id = id;
-        argv.action = action;
-      }
+  // form argv for #info
+  const argv = Object.create(null);
 
-      return this.backend.remove(argv);
-    });
+  // we have uid
+  if (uid) {
+    argv.uid = uid;
+  // we have just a secret, so we must have id & action, too
+  } else if (token) {
+    argv.id = id;
+    argv.action = action;
+    argv.token = token;
+  // do plain extraction by id + action
+  } else {
+    argv.id = id;
+    argv.action = action;
+  }
+
+  return this.backend.remove(argv);
 };

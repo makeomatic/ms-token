@@ -1,4 +1,3 @@
--r babel-register
--r test/helpers/inspect-promise.js
+--require @babel/register
 --timeout 10000
 --bail

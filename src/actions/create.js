@@ -1,4 +1,3 @@
-const Promise = require('bluebird');
 const Joi = require('joi');
 const uuid = require('uuid');
 const crypto = require('../utils/crypto');
@@ -94,44 +93,42 @@ function getSecret(_secret) {
   return secret;
 }
 
-module.exports = function create(args) {
-  return Promise
-    .try(() => Joi.attempt(args, schema))
-    .then((opts) => {
-      const { action, id, ttl, metadata } = opts;
-      const throttle = getThrottle(opts.throttle, ttl);
-      const uid = opts.regenerate ? uuid.v4() : false;
-      const secret = getSecret(opts.secret);
+module.exports = async function create(args) {
+  const opts = Joi.attempt(args, schema);
 
-      const settings = {
-        id,
-        action,
-        ttl,
-        throttle,
-        created: Date.now(),
-      };
+  const { action, id, ttl, metadata } = opts;
+  const throttle = getThrottle(opts.throttle, ttl);
+  const uid = opts.regenerate ? uuid.v4() : false;
+  const secret = getSecret(opts.secret);
 
-      const output = {
-        id,
-        action,
-      };
+  const settings = {
+    id,
+    action,
+    ttl,
+    throttle,
+    created: Date.now(),
+  };
 
-      if (uid) {
-        settings.uid = uid;
-        output.uid = uid;
-      }
+  const output = {
+    id,
+    action,
+  };
 
-      if (metadata) {
-        settings.metadata = metadata;
-      }
+  if (uid) {
+    settings.uid = uid;
+    output.uid = uid;
+  }
 
-      if (secret) {
-        settings.secret = secret;
-        output.secret = crypto.secret(this.encrypt, secret, { id, action, uid });
-      }
+  if (metadata) {
+    settings.metadata = metadata;
+  }
 
-      return this.backend
-        .create(settings, output)
-        .return(output);
-    });
+  if (secret) {
+    settings.secret = secret;
+    output.secret = crypto.secret(this.encrypt, secret, { id, action, uid });
+  }
+
+  await this.backend.create(settings, output);
+
+  return output;
 };
