@@ -2,6 +2,10 @@ local secretKey = KEYS[1];
 local timeVerified = ARGV[1];
 local erase = ARGV[2];
 
+local function isempty(s)
+  return s == false or s == nil or s == '';
+end
+
 if redis.call('exists', secretKey) ~= 1 then
   return redis.error_reply("404");
 end
@@ -19,7 +23,14 @@ if isFirstVerification == 1 or erase == 'true' then
 
   -- if we have erase, we don't need to write anything
   if erase == 'true' then
+    local throttleKey = redis.call('hget', secretKey, 'throttleKey');
+
     redis.call('del', unpack(related));
+
+    -- delete throttle lock
+    if not isempty(throttleKey) then
+      redis.call("DEL", throttleKey);
+    end
   else
     -- otherwise we need to attach xtra data
     for i,key in ipairs(related) do

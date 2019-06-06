@@ -40,6 +40,7 @@ class RedisBackend {
     created: Number,
     verified: Number,
     isFirstVerification: Boolean,
+    throttleKey: String,
   };
 
   // static instance of error

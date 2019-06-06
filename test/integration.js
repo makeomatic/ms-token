@@ -456,6 +456,20 @@ describe('TokenManager', () => {
         });
       });
 
+      it('completes challenge, clears lock by default', async () => {
+        const createOpts = {
+          id: ID,
+          action: ACTION,
+          ttl: 3,
+          throttle: 1,
+        };
+
+        const result = await manager.create(createOpts);
+        await manager.verify(result.secret);
+
+        await assert.doesNotReject(() => manager.create(createOpts));
+      });
+
       it('completes challenge with unencrypted secret', async () => {
         const result = await manager.create({
           id: ID,

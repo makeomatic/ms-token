@@ -45,7 +45,12 @@ if throttle > 0 then
 end
 
 local function insertToken(key, encoded)
-  redis.call("HMSET", key, "id", id, "action", action, "uid", uid, "secret", secret, "created", created, "settings", secretSettings, "metadata", metadata, "related", encoded);
+  redis.call(
+    "HMSET", key,
+    "id", id, "action", action, "uid", uid, "secret", secret, "created", created,
+    "settings", secretSettings, "metadata", metadata, "related", encoded,
+    "throttleKey", throttleKey -- needed later to delete throttle lock on success verification
+  );
   -- put ttl if required
   if ttl > 0 then
     redis.call("EXPIRE", key, ttl);
