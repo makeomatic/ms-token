@@ -1,4 +1,4 @@
-const Joi = require('joi');
+const Joi = require('@hapi/joi');
 const glob = require('glob');
 const path = require('path');
 const pkg = require('../package.json');

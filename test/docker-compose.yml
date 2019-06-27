@@ -2,10 +2,10 @@ version: '3'
 
 services:
   redis:
-    image: redis:4-alpine
+    image: redis:5-alpine
 
   tester:
-    image: makeomatic/node:10.13.0-tester
+    image: makeomatic/node:10.16.0-tester
     depends_on:
       - redis
     working_dir: /src

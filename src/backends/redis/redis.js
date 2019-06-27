@@ -1,7 +1,6 @@
-const filter = require('lodash/filter');
-const get = require('lodash/get');
-const omit = require('lodash/omit');
-const compact = require('lodash/compact');
+const get = require('get-value');
+const omit = require('lodash.omit');
+const compact = require('lodash.compact');
 const glob = require('glob');
 const fs = require('fs');
 const path = require('path');
@@ -53,7 +52,7 @@ class RedisBackend {
 
   // redis key helpers
   key(...args) {
-    return this.prefix + filter(args, Boolean).join('!');
+    return this.prefix + args.filter(Boolean).join('!');
   }
 
   uid(uid) {

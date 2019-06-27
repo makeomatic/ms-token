@@ -1,4 +1,4 @@
-const Joi = require('joi');
+const Joi = require('@hapi/joi');
 const is = require('is');
 const assert = require('assert');
 const crypto = require('../utils/crypto');
