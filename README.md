@@ -40,7 +40,7 @@ const tokenManager = new TokenManager({
   },
   encrypt: {
     algorithm: 'aes256',
-    sharedSecret: Buffer.from('incredibly-long-secret'),
+    sharedSecret: Buffer.from('incredibly-long-secret-ooooohooo'),
   },
 });
 ```

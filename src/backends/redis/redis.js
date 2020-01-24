@@ -31,24 +31,14 @@ class RedisBackend {
     }
   }
 
-  static RESERVED_PROPS = {
-    id: String,
-    action: String,
-    secret: String,
-    uid: String,
-    created: Number,
-    verified: Number,
-    isFirstVerification: Boolean,
-    throttleKey: String,
-  };
-
-  // static instance of error
-  static Unauthorized = new Error(403);
-
   // quick helpers
-  static serialize = data => JSON.stringify(data);
+  static serialize(data) {
+    return JSON.stringify(data);
+  }
 
-  static deserialize = data => JSON.parse(data);
+  static deserialize(data) {
+    return JSON.parse(data);
+  }
 
   // redis key helpers
   key(...args) {
@@ -116,7 +106,7 @@ class RedisBackend {
     const { id, action, uid } = data;
     const secretSettings = RedisBackend.deserialize(data.settings);
     const oldSecret = data.secret;
-    const newSecret = updateSecret(id, action, uid, secretSettings);
+    const newSecret = await updateSecret(id, action, uid, secretSettings);
 
     // redis keys
     const idKey = this.key(action, id);
@@ -211,5 +201,19 @@ class RedisBackend {
     return this._remove(data);
   }
 }
+
+RedisBackend.RESERVED_PROPS = {
+  id: String,
+  action: String,
+  secret: String,
+  uid: String,
+  created: Number,
+  verified: Number,
+  isFirstVerification: Boolean,
+  throttleKey: String,
+};
+
+// static instance of error
+RedisBackend.Unauthorized = new Error(403);
 
 module.exports = RedisBackend;

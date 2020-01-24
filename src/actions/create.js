@@ -23,17 +23,19 @@ const schema = Joi
         .min(0)
         .max(Joi.ref('ttl')),
       Joi.boolean()
-        .only(true)
+        .valid(true)
     ),
 
     metadata: Joi.any(),
+
+    legacy: Joi.boolean().default(false),
 
     secret: Joi.alternatives()
       .try(
         Joi.boolean(),
         Joi.object({
           type: Joi.string()
-            .only(['alphabet', 'number', 'uuid'])
+            .valid('alphabet', 'number', 'uuid')
             .required(),
 
           alphabet: Joi.any()
@@ -45,7 +47,7 @@ const schema = Joi
 
           length: Joi.any()
             .when('type', {
-              is: Joi.string().only(['alphabet', 'number']),
+              is: Joi.string().valid('alphabet', 'number'),
               then: Joi.number().integer().min(1).required(),
               otherwise: Joi.forbidden(),
             }),
@@ -53,8 +55,8 @@ const schema = Joi
           encrypt: Joi.boolean()
             .when('type', {
               is: 'uuid',
-              then: Joi.default(true),
-              otherwise: Joi.default(false),
+              then: Joi.any().default(true),
+              otherwise: Joi.any().default(false),
             }),
         })
       )
@@ -63,7 +65,7 @@ const schema = Joi
     regenerate: Joi.boolean()
       .when('secret', {
         is: false,
-        then: Joi.only(false),
+        then: Joi.valid(false),
         otherwise: Joi.optional(),
       }),
   })
@@ -96,7 +98,7 @@ function getSecret(_secret) {
 module.exports = async function create(args) {
   const opts = Joi.attempt(args, schema);
 
-  const { action, id, ttl, metadata } = opts;
+  const { action, id, ttl, metadata, legacy } = opts;
   const throttle = getThrottle(opts.throttle, ttl);
   const uid = opts.regenerate ? uuid.v4() : false;
   const secret = getSecret(opts.secret);
@@ -125,7 +127,7 @@ module.exports = async function create(args) {
 
   if (secret) {
     settings.secret = secret;
-    output.secret = crypto.secret(this.encrypt, secret, { id, action, uid });
+    output.secret = await crypto.secret(this.encrypt, secret, { id, action, uid }, legacy);
   }
 
   await this.backend.create(settings, output);

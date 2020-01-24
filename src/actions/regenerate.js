@@ -18,7 +18,7 @@ const schema = Joi.alternatives()
   );
 
 // helper function used to generate new secret
-const generateSecret = encrypt => (id, action, uid, secret) => (
+const generateSecret = (encrypt) => async (id, action, uid, secret) => (
   crypto.secret(encrypt, secret, { id, action, uid })
 );
 

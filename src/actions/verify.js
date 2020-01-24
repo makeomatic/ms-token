@@ -34,15 +34,6 @@ const optsSchema = Joi.object({
 });
 
 /**
- * Enriches error and includes args into it
- * @param  {Error} e
- */
-function enrichError(e) {
-  e.args = this;
-  throw e;
-}
-
-/**
  * Parses input options
  * @param  {Function}
  * @param  {Object|String}
@@ -83,12 +74,13 @@ function assertControlOptions(args, opts) {
  * @param  {Object} [_opts={}]
  * @return {Promise}
  */
-module.exports = async function create(_args, _opts = {}) {
+module.exports = async function verify(_args, _opts = {}) {
   const { args, opts } = parseInput(this.decrypt, _args, _opts);
   assertControlOptions(args, opts);
   try {
     return await this.backend.verify(args, opts);
   } catch (e) {
-    return enrichError.call(args, e);
+    e.args = args;
+    throw e;
   }
 };

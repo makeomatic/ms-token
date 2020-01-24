@@ -1,49 +1,50 @@
 const Joi = require('@hapi/joi');
+const Redis = require('ioredis');
 const glob = require('glob');
 const path = require('path');
 const pkg = require('../package.json');
 
 const backends = glob
   .sync('*', { cwd: path.join(__dirname, 'backends') })
-  .map(filename => path.basename(filename, '.js'));
+  .map((filename) => path.basename(filename, '.js'));
 
-const schema = Joi
-  .object({
-    backend: {
-      name: Joi.string()
-        .only(backends)
-        .required(),
+const secret = Joi.binary()
+  .encoding('utf8')
+  .required();
 
-      connection: Joi.any()
-        .required()
-        .when('name', {
-          is: 'redis',
-          then: Joi.lazy(() => {
-            const Redis = require('ioredis');
+const schema = Joi.object({
+  backend: Joi.object({
+    name: Joi.string()
+      .valid(...backends)
+      .required(),
 
-            return Joi.alternatives()
-              .try(
-                Joi.object().type(Redis),
-                Joi.object().type(Redis.Cluster)
-              );
-          }),
-        }),
+    connection: Joi.any()
+      .required()
+      .when('name', {
+        is: 'redis',
+        then: Joi.alternatives().try(
+          Joi.object().instance(Redis),
+          Joi.object().instance(Redis.Cluster)
+        ),
+      }),
 
-      prefix: Joi.string()
-        .default(`{ms-token!${pkg.version}}`),
-    },
+    prefix: Joi.string()
+      .default(`{ms-token!${pkg.version}}`),
+  }).required(),
 
-    encrypt: {
+  encrypt: Joi.object({
 
-      algorithm: Joi.string()
-        .required(),
+    algorithm: Joi.string()
+      .required(),
 
-      sharedSecret: Joi.binary()
-        .encoding('utf8')
-        .min(24)
-        .required(),
-    },
-  })
-  .requiredKeys(['', 'backend', 'encrypt']);
+    sharedSecret: Joi.alternatives().try(
+      secret.min(32),
+      Joi.object({
+        legacy: secret.min(24),
+        current: secret.min(32),
+      })
+    ).required(),
+  }).required(),
+}).required();
 
-module.exports = opts => Joi.attempt(opts, schema);
+module.exports = (opts) => Joi.attempt(opts, schema);

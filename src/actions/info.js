@@ -42,7 +42,7 @@ const schema = Joi.alternatives()
         .required(),
 
       encrypt: Joi.bool()
-        .only(true)
+        .valid(true)
         .required(),
     }),
 
@@ -59,7 +59,7 @@ const schema = Joi.alternatives()
         .required(),
 
       encrypt: Joi.bool()
-        .only(false)
+        .valid(false)
         .required(),
     })
   );

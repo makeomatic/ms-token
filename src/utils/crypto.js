@@ -3,9 +3,16 @@ const base64url = require('base64-url');
 const uuid = require('uuid');
 const Chance = require('chance');
 const is = require('is');
+const assert = require('assert');
+const { promisify } = require('util');
 
+const randomBytes = promisify(crypto.randomBytes);
 const chance = new Chance();
 const NUMBERS = '0123456789';
+const kVersion = Buffer.from('v1');
+const kBytes = 16;
+const kVersionL = kVersion.byteLength;
+const kInputStart = kVersionL + kBytes;
 
 /**
  * Creates (de)cipher
@@ -15,15 +22,46 @@ const NUMBERS = '0123456789';
  * @return {Function}
  */
 exports.createCipher = function createCipher({ algorithm, sharedSecret }) {
+  let legacySecret;
+  let currentSecret;
+
+  if (Buffer.isBuffer(sharedSecret)) {
+    legacySecret = sharedSecret;
+    currentSecret = sharedSecret;
+  } else {
+    legacySecret = sharedSecret.legacy;
+    currentSecret = sharedSecret.current;
+  }
+
   function decrypt(string) {
     const input = Buffer.from(base64url.unescape(string), 'base64');
-    const cipher = crypto.createDecipher(algorithm, sharedSecret);
+
+    if (kVersion.equals(input.slice(0, kVersionL))) {
+      assert(input.length > kInputStart, 'nonce not present');
+      const nonce = input.slice(kVersionL, kInputStart);
+      const encodedData = input.slice(kInputStart);
+      const cipher = crypto.createDecipheriv(algorithm, currentSecret, nonce);
+      return Buffer.concat([cipher.update(encodedData), cipher.final()]).toString();
+    }
+
+    /* back-compatibility */
+    const cipher = crypto.createDecipher(algorithm, legacySecret);
     return Buffer.concat([cipher.update(input), cipher.final()]).toString();
   }
 
-  function encrypt(string) {
-    const cipher = crypto.createCipher(algorithm, sharedSecret);
-    const buffers = [cipher.update(Buffer.from(string)), cipher.final()];
+  async function encrypt(string, legacy = false) {
+    const buffers = [];
+
+    if (legacy === false) {
+      const nonce = await randomBytes(kBytes);
+      const cipher = crypto.createCipheriv(algorithm, currentSecret, nonce);
+      buffers.push(kVersion, nonce, cipher.update(Buffer.from(string)), cipher.final());
+    } else {
+      console.warn('[warn] consider not using legacy generation mode'); // eslint-disable-line no-console
+      const cipher = crypto.createCipher(algorithm, legacySecret);
+      buffers.push(cipher.update(Buffer.from(string)), cipher.final());
+    }
+
     const input = Buffer.concat(buffers).toString('base64');
     return base64url.escape(input);
   }
@@ -36,9 +74,10 @@ exports.createCipher = function createCipher({ algorithm, sharedSecret }) {
  * @param  {Function} [encrypt] - if settings.encrypt is `true`, must be present
  * @param  {Object} settings
  * @param  {Object} payload
+ * @param  {Boolean} [legacy=false] - uses deprecated crypto.createCipher
  * @return {String}
  */
-exports.secret = function createSecret(encrypt, settings, payload) {
+exports.secret = async function createSecret(encrypt, settings, payload, legacy = false) {
   let token;
 
   switch (settings.type) {
@@ -67,7 +106,9 @@ exports.secret = function createSecret(encrypt, settings, payload) {
   settings.token = token;
 
   // return encrypted payload + token or plain token
-  return settings.encrypt ? encrypt(JSON.stringify({ ...payload, token })) : token;
+  return settings.encrypt
+    ? encrypt(JSON.stringify({ ...payload, token }), legacy)
+    : token;
 };
 
 /**

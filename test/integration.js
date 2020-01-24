@@ -18,7 +18,10 @@ describe('TokenManager', () => {
       },
       encrypt: {
         algorithm: 'aes256',
-        sharedSecret: '123456789012345678901234',
+        sharedSecret: {
+          legacy: '123456789012345678901234',
+          current: '12345678901234567890123456789012',
+        },
       },
     };
 
@@ -42,7 +45,7 @@ describe('TokenManager', () => {
       it('throw when id is not specified', async () => {
         await assert.rejects(manager.create({ action: ACTION }), (e) => {
           assert(e.name === 'ValidationError');
-          assert(/\[1\] "id" is required/m.test(e.toString()), e.toString());
+          assert(/ValidationError: "id" is required/.test(e.toString()), e.toString());
           return true;
         });
       });
@@ -50,7 +53,7 @@ describe('TokenManager', () => {
       it('throw when action is not specified', async () => {
         await assert.rejects(manager.create({ id: ID }), (rejection) => {
           assert(rejection.name === 'ValidationError');
-          assert(/\[1\] "action" is required/m.test(rejection.toString()));
+          assert(/ValidationError: "action" is required/m.test(rejection.toString()));
           return true;
         });
       });
@@ -62,8 +65,8 @@ describe('TokenManager', () => {
           regenerate: true,
           secret: false,
         }), (rejection) => {
-          assert(rejection.name === 'ValidationError');
-          assert(/\[1\] "regenerate" must be one of \[false\]/m.test(rejection.toString()));
+          assert.equal(rejection.name, 'ValidationError');
+          assert(/ValidationError: "regenerate" must be \[false\]/m.test(rejection.toString()));
           return true;
         });
       });
@@ -116,8 +119,7 @@ describe('TokenManager', () => {
           throttle: 10,
         }), (rejection) => {
           assert.equal(rejection.name, 'ValidationError');
-          assert(/\[1\] "throttle" must be less than or equal to 3/m.test(rejection.toString()));
-          assert(/\[2\] "throttle" must be a boolean/m.test(rejection.toString()));
+          assert.equal('"throttle" must be less than or equal to ref:ttl', rejection.message);
           return true;
         });
       });
@@ -467,6 +469,20 @@ describe('TokenManager', () => {
         const result = await manager.create(createOpts);
         await manager.verify(result.secret);
 
+        await assert.doesNotReject(() => manager.create(createOpts));
+      });
+
+      it('completes legacy challenge, clears lock by default', async () => {
+        const createOpts = {
+          id: ID,
+          action: ACTION,
+          ttl: 3,
+          throttle: 1,
+          legacy: true,
+        };
+
+        const result = await manager.create(createOpts);
+        await manager.verify(result.secret);
         await assert.doesNotReject(() => manager.create(createOpts));
       });
 

@@ -17,11 +17,11 @@ describe('TokenManager', () => {
         },
         encryption: {
           algorithm: 'aes256',
-          sharedSecret: '123456789012345678901234',
+          sharedSecret: '12345678901234567890123456789012',
         },
       };
 
-      assert.throws(() => new TokenManager(opts), /\[1\] "name" must be one of \[redis\]/);
+      assert.throws(() => new TokenManager(opts), /"backend.name" must be \[redis\]/);
     });
 
     describe('redis backend', () => {
@@ -33,11 +33,11 @@ describe('TokenManager', () => {
           },
           encryption: {
             algorithm: 'aes256',
-            sharedSecret: '123456789012345678901234',
+            sharedSecret: '12345678901234567890123456789012',
           },
         };
 
-        assert.throws(() => new TokenManager(opts), /"connection" must be an instance of "Redis"/);
+        assert.throws(() => new TokenManager(opts), /"backend.connection" does not match any of the allowed types/);
       });
 
       it('fails to init when connection has encryption is not specified', () => {
@@ -63,7 +63,7 @@ describe('TokenManager', () => {
           },
         };
 
-        assert.throws(() => new TokenManager(opts), /"sharedSecret" must be at least 24 bytes/);
+        assert.throws(() => new TokenManager(opts), /"encrypt.sharedSecret" must be at least 32 bytes/);
       });
 
       it('initializes with correct configuration', () => {
@@ -74,7 +74,7 @@ describe('TokenManager', () => {
           },
           encrypt: {
             algorithm: 'aes256',
-            sharedSecret: '123456789012345678901234',
+            sharedSecret: '12345678901234567890123456789012',
           },
         };
 
