@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const base64url = require('base64-url');
-const uuid = require('uuid');
+const { v4: uuidv4 } = require('uuid');
 const Chance = require('chance');
 const is = require('is');
 const assert = require('assert');
@@ -82,7 +82,7 @@ exports.secret = async function createSecret(encrypt, settings, payload, legacy 
 
   switch (settings.type) {
     case 'uuid': {
-      token = uuid.v4();
+      token = uuidv4();
       break;
     }
 

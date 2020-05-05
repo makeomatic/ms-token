@@ -1,5 +1,5 @@
 const Joi = require('@hapi/joi');
-const uuid = require('uuid');
+const { v4: uuidv4 } = require('uuid');
 const crypto = require('../utils/crypto');
 
 // actual data schema
@@ -100,7 +100,7 @@ module.exports = async function create(args) {
 
   const { action, id, ttl, metadata, legacy } = opts;
   const throttle = getThrottle(opts.throttle, ttl);
-  const uid = opts.regenerate ? uuid.v4() : false;
+  const uid = opts.regenerate ? uuidv4() : false;
   const secret = getSecret(opts.secret);
 
   const settings = {
