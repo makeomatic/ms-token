@@ -35,8 +35,9 @@ end
 
 -- we check if value exists before attempting to capture lock
 -- because script execution is atomic, we do not need to make sure that we've captured the lock
-if isempty(redis.call("GET", throttleKey)) ~= true then
-  return redis.error_reply("429");
+local throttleTtl = redis.call("TTL", throttleKey)
+if throttleTtl ~= -2 then
+  return redis.error_reply("429\n" .. cjson.encode({ttl=throttleTtl}))
 end
 
 -- make sure that we own the "lock"
