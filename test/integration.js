@@ -134,6 +134,7 @@ describe('TokenManager', () => {
 
         await assert.rejects(manager.create({ id: ID, action: ACTION }), (error) => {
           assert.equal(error.message, '429');
+          assert.equal(error.reason.ttl > 0, true);
           return true;
         });
       });

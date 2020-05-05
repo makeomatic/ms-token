@@ -90,7 +90,21 @@ class RedisBackend {
       .msTokenCreate(
         4, idKey, uidKey, secretKey, throttleKey,
         id, action, uid, ttl, throttle, created, secret, secretSettings, serializedMetadata
-      );
+      )
+      .catch((err) => {
+        if (err.message.startsWith('429')) {
+          let reason = {};
+
+          try {
+            reason = JSON.parse(err.message.substring(4));
+          } finally {
+            err.message = '429';
+            err.reason = reason;
+          }
+        }
+
+        throw err;
+      });
   }
 
   async regenerate(opts, updateSecret) {
