@@ -1,5 +1,5 @@
 {
-  "require": "@babel/register",
   "timeout": 10000,
-  "bail": true
+  "bail": true,
+  "require": "ts-node/register"
 }
