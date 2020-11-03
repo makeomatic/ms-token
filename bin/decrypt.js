@@ -3,27 +3,27 @@
 /* eslint-disable no-console */
 
 // decodes input token
-const assert = require('assert');
-const crypto = require('../lib/utils/crypto');
+const assert = require('assert')
+const { createCipher } = require('../lib/utils/crypto')
 
 //
 // Logic
 //
-const [,, token, algorithm, sharedSecret] = process.argv;
+const [,, token, algorithm, sharedSecret] = process.argv
 
-assert.ok(token, 'pass token as first arg');
-assert.ok(algorithm, 'pass algo as second arg');
-assert.ok(sharedSecret, 'pass shared secret as third arg');
+assert.ok(token, 'pass token as first arg')
+assert.ok(algorithm, 'pass algo as second arg')
+assert.ok(sharedSecret, 'pass shared secret as third arg')
 
-const { decrypt } = crypto.createCipher({ algorithm, sharedSecret });
+const { decrypt } = createCipher({ algorithm, sharedSecret })
 
 // decrypted
-const decrypted = decrypt(token);
+const decrypted = decrypt(token)
 
-console.info('\ndecrypted: \n', decrypted, '\n');
+console.info('\ndecrypted: \n', decrypted, '\n')
 
-const parsed = JSON.parse(decrypted);
+const parsed = JSON.parse(decrypted)
 
-console.info('\nparsed JSON: \n', parsed, '\n');
+console.info('\nparsed JSON: \n', parsed, '\n')
 
-process.exit(0);
+process.exit(0)
