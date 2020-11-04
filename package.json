@@ -8,7 +8,7 @@
     "test-unit": "mocha --extensions ts test/unit.ts",
     "test-integration": "mdep test run -t ./test/integration.ts",
     "lint": "eslint ./src",
-    "compile": "rimraf ./lib *.tsbuildinfo; tsc --build tsconfig.build.json",
+    "compile": "rimraf ./lib *.tsbuildinfo; tsc --build tsconfig.build.json && copyfiles -u 1 ./src/backends/**/*.lua ./lib",
     "prepublishOnly": "yarn compile",
     "semantic-release": "semantic-release"
   },
@@ -50,6 +50,7 @@
     "@typescript-eslint/eslint-plugin": "^4.6.1",
     "@typescript-eslint/parser": "^4.6.1",
     "codecov": "^3.8.1",
+    "copyfiles": "^2.4.0",
     "cross-env": "^7.0.2",
     "eslint": "^7.12.1",
     "eslint-config-makeomatic": "^5.0.3",
