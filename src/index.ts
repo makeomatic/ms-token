@@ -8,10 +8,10 @@ import { regenerate } from './actions/regenerate'
 import { remove } from './actions/remove'
 
 export class TokenManager {
-  readonly config: Configuration;
-  readonly backend: Backend;
-  readonly encrypt: Encrypt;
-  readonly decrypt: Decrypt;
+  readonly config: Configuration
+  readonly backend: Backend
+  readonly encrypt: Encrypt
+  readonly decrypt: Decrypt
 
   /**
   * Creates token

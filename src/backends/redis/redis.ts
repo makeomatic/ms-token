@@ -1,5 +1,5 @@
 import get from 'get-value'
-import glob from 'glob'
+import { globSync } from 'glob'
 import fs from 'fs'
 import path from 'path'
 import type { Redis, Cluster } from 'ioredis'
@@ -52,8 +52,8 @@ declare module 'ioredis' {
  * 5. new secret by `uid`
  */
 export class RedisBackend implements Backend {
-  #redis: Redis | Cluster;
-  #prefix: string;
+  #redis: Redis | Cluster
+  #prefix: string
 
   private static RESERVED_PROPS: { [key: string]: StringConstructor | BooleanConstructor | NumberConstructor } = {
     id: String,
@@ -88,7 +88,7 @@ export class RedisBackend implements Backend {
 
     // load scripts
     const cwd = path.join(__dirname, 'lua')
-    for (const script of glob.sync('*.lua', { cwd })) {
+    for (const script of globSync('*.lua', { cwd })) {
       const name = path.basename(script, '.lua')
       const lua = fs.readFileSync(path.join(cwd, script), 'utf8')
       this.#redis.defineCommand(name, { lua })
@@ -125,7 +125,7 @@ export class RedisBackend implements Backend {
         4, idKey, uidKey, secretKey, throttleKey,
         id, action, uid, ttl, throttle, created, secret, secretSettings, serializedMetadata
       )
-    } catch (err) {
+    } catch (err: any) {
       if (err.message.startsWith('429')) {
         try {
           err.reason = JSON.parse(err.message.substring(4))

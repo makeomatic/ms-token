@@ -1,15 +1,7 @@
-version: '3'
-
 services:
   redis:
-    image: redis:5-alpine
+    image: redis:6-alpine
 
   tester:
     depends_on:
       - redis
-    working_dir: /src
-    volumes:
-      - ${PWD}:/src:cached
-    environment:
-      NODE_ENV: "test"
-    command: tail -f /dev/null

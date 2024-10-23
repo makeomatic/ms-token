@@ -78,7 +78,7 @@ export async function verify(this: TokenManager, _args: VerifyOpts | string, _op
   assertControlOptions(args, opts)
   try {
     return await this.backend.verify(args, opts)
-  } catch (e) {
+  } catch (e: any) {
     e.args = args
     throw e
   }

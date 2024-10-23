@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { createSecret, SecretSettings } from '../utils/crypto'
 import type { TokenManager } from '..'
 import type { CreateOpts, Token } from '../backends/abstract'
+import assert = require('assert')
 
 export type CreateArgsBase<T> = Omit<CreateOpts, 'created' | 'secret'>
   & { legacy?: boolean; }
@@ -86,10 +87,11 @@ const schema = Joi
   .with('throttle', 'ttl')
   .required()
 
-function getThrottle(_throttle: number | boolean, ttl: number) {
+function getThrottle(_throttle: undefined | number | boolean, ttl?: number): number | boolean {
   // define throttle
   let throttle = _throttle || false
   if (throttle === true) {
+    assert(typeof ttl === 'number')
     throttle = ttl
   }
 
@@ -113,9 +115,9 @@ export async function create(this: TokenManager, args: CreateArgs & { secret: fa
 export async function create(this: TokenManager, args: CreateArgs & { secret?: SecretSettings | true, regenerate?: false }): Promise<Token & { secret: string, uid: never }>
 export async function create(this: TokenManager, args: CreateArgs & { secret?: SecretSettings | true, regenerate: true }): Promise<Token & { secret: string, uid: string }>
 export async function create(this: TokenManager, args: CreateArgs): Promise<Token> {
-  const opts: Required<CreateArgs> = Joi.attempt(args, schema)
+  const opts = Joi.attempt(args, schema)
 
-  const { action, id, ttl, metadata, legacy } = opts
+  const { action, id, ttl, metadata } = opts
   const throttle = getThrottle(opts.throttle, ttl)
   const uid = opts.regenerate ? uuidv4() : false
   const secret = getSecret(opts.secret)
@@ -144,7 +146,7 @@ export async function create(this: TokenManager, args: CreateArgs): Promise<Toke
 
   if (secret) {
     settings.secret = secret
-    output.secret = await createSecret(this.encrypt, secret, { id, action, uid }, legacy)
+    output.secret = await createSecret(this.encrypt, secret, { id, action, uid })
   }
 
   await this.backend.create(settings)

@@ -1,6 +1,6 @@
-import Bluebird from 'bluebird'
-import assert from 'assert'
+import assert from 'node:assert/strict'
 import Redis from 'ioredis'
+import { setTimeout } from 'node:timers/promises'
 import { TokenManager } from '../src'
 
 describe('TokenManager', () => {
@@ -47,7 +47,7 @@ describe('TokenManager', () => {
     describe('#create & #info', () => {
       it('throw when id is not specified', async () => {
         // @ts-expect-error test for id param missing
-        await assert.rejects(manager.create({ action: ACTION }), (e) => {
+        await assert.rejects(manager.create({ action: ACTION }), (e: any) => {
           assert(e.name === 'ValidationError')
           assert(/ValidationError: "id" is required/.test(e.toString()), e.toString())
           return true
@@ -56,7 +56,7 @@ describe('TokenManager', () => {
 
       it('throw when action is not specified', async () => {
         // @ts-expect-error test for action param missing
-        await assert.rejects(manager.create({ id: ID }), (rejection) => {
+        await assert.rejects(manager.create({ id: ID }), (rejection: any) => {
           assert(rejection.name === 'ValidationError')
           assert(/ValidationError: "action" is required/m.test(rejection.toString()))
           return true
@@ -70,7 +70,7 @@ describe('TokenManager', () => {
           regenerate: true,
           // @ts-expect-error checking that falsy secret cant go with truthy regenerate
           secret: false,
-        }), (rejection) => {
+        }), (rejection: any) => {
           assert.equal(rejection.name, 'ValidationError')
           assert(/ValidationError: "regenerate" must be \[false\]/m.test(rejection.toString()))
           return true
@@ -110,7 +110,7 @@ describe('TokenManager', () => {
         assert.ok(result.secret)
 
         await manager.info({ token: result.secret, encrypt: true })
-        await Bluebird.delay(3100)
+        await setTimeout(3100)
 
         await assert.rejects(manager.info({ token: result.secret, encrypt: true }), {
           message: '404',
@@ -123,7 +123,7 @@ describe('TokenManager', () => {
           action: ACTION,
           ttl: 3,
           throttle: 10,
-        }), (rejection) => {
+        }), (rejection: any) => {
           assert.equal(rejection.name, 'ValidationError')
           assert.equal('"throttle" must be less than or equal to ref:ttl', rejection.message)
           return true
@@ -138,7 +138,7 @@ describe('TokenManager', () => {
           throttle: true,
         })
 
-        await assert.rejects(manager.create({ id: ID, action: ACTION }), (error) => {
+        await assert.rejects(manager.create({ id: ID, action: ACTION }), (error: any) => {
           assert.equal(error.message, '429')
           assert.equal(error.reason.ttl > 0, true)
           return true
@@ -153,7 +153,7 @@ describe('TokenManager', () => {
           throttle: 1,
         })
 
-        await Bluebird.delay(1000)
+        await setTimeout(1000)
         const result = await manager.create({ id: ID, action: ACTION })
 
         assert.equal(result.id, ID)
@@ -355,8 +355,8 @@ describe('TokenManager', () => {
           secret: false,
         })
 
-        await assert.rejects(manager.regenerate({ id: ID, action: ACTION }), (error) => {
-          assert.equal(error.message, 404)
+        await assert.rejects(manager.regenerate({ id: ID, action: ACTION }), (error: any) => {
+          assert.equal(error.message, '404')
           return true
         })
       })
@@ -371,7 +371,7 @@ describe('TokenManager', () => {
         await assert.rejects(Promise.all([
           manager.regenerate({ id: ID, action: ACTION }),
           manager.regenerate({ id: ID, action: ACTION }),
-        ]), (error) => {
+        ]), (error: any) => {
           assert.equal(error.message, '409')
           return true
         })
@@ -401,7 +401,7 @@ describe('TokenManager', () => {
           regenerate: true,
         })
 
-        await assert.rejects(manager.verify(result.secret.replace(/j/, 'a')), (error) => {
+        await assert.rejects(manager.verify(result.secret.replace(/j/, 'a')), (error: any) => {
           assert.equal(error.message, 'invalid token')
           return true
         })
@@ -414,7 +414,7 @@ describe('TokenManager', () => {
           regenerate: true,
         })
 
-        await assert.rejects(manager.verify(result.secret.slice(1)), (error) => {
+        await assert.rejects(manager.verify(result.secret.slice(1)), (error: any) => {
           assert.equal(error.message, 'invalid token')
           return true
         })
@@ -431,7 +431,7 @@ describe('TokenManager', () => {
             id: 'another@mail.com',
             action: 'another-namespace',
           },
-        }), (error) => {
+        }), (error: any) => {
           assert.equal(error.message, `Sanity check failed for "id" failed: "another@mail.com" vs "${ID}"`)
           return true
         })
@@ -452,7 +452,7 @@ describe('TokenManager', () => {
         assert.ok(data.verified)
         assert.equal(data.isFirstVerification, true)
 
-        await assert.rejects(manager.verify(result.secret), (error) => {
+        await assert.rejects(manager.verify(result.secret), (error: any) => {
           assert.equal(error.message, '404')
 
           // furthermore, makes sure that it has additional error data

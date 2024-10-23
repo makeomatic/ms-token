@@ -4,11 +4,8 @@ import {
   CipherCCMTypes,
   CipherGCMTypes,
   createDecipheriv,
-  createCipheriv,
-  createDecipher as cryptoCreateDecipher,
-  createCipher as cryptoCreateCipher
+  createCipheriv
 } from 'crypto'
-import base64url = require('base64-url')
 import { v4 as uuidv4 } from 'uuid'
 import Chance = require('chance')
 import assert = require('assert')
@@ -25,13 +22,12 @@ const kInputStart = kVersionL + kBytes
 export type CipherSettings = {
   algorithm: CipherCCMTypes | CipherGCMTypes;
   sharedSecret: Buffer | {
-    legacy: Buffer;
     current: Buffer;
   };
 }
 
 export type Encrypt = {
-  (string: string, legacy?: boolean): Promise<string>
+  (string: string): Promise<string>
 }
 
 export type Decrypt = {
@@ -42,48 +38,38 @@ export type Decrypt = {
  * Creates (de)cipher
  */
 export function createCipher({ algorithm, sharedSecret }: CipherSettings): { encrypt: Encrypt, decrypt: Decrypt } {
-  let legacySecret: BinaryLike
   let currentSecret: BinaryLike
 
   if (Buffer.isBuffer(sharedSecret)) {
-    legacySecret = sharedSecret
     currentSecret = sharedSecret
   } else {
-    legacySecret = sharedSecret.legacy
     currentSecret = sharedSecret.current
   }
 
   function decrypt(string: string): string {
-    const input = Buffer.from(base64url.unescape(string), 'base64')
+    const input = Buffer.from(string, 'base64url')
 
-    if (kVersion.equals(input.slice(0, kVersionL))) {
+    if (kVersion.equals(input.subarray(0, kVersionL))) {
       assert(input.length > kInputStart, 'nonce not present')
-      const nonce = input.slice(kVersionL, kInputStart)
-      const encodedData = input.slice(kInputStart)
+      const nonce = input.subarray(kVersionL, kInputStart)
+      const encodedData = input.subarray(kInputStart)
       const cipher = createDecipheriv(algorithm, currentSecret, nonce)
       return Buffer.concat([cipher.update(encodedData), cipher.final()]).toString()
     }
 
-    /* back-compatibility */
-    const cipher = cryptoCreateDecipher(algorithm, legacySecret)
-    return Buffer.concat([cipher.update(input), cipher.final()]).toString()
+    throw new Error('using incompatible version')
   }
 
-  async function encrypt(string: string, legacy = false): Promise<string> {
-    const buffers = []
+  async function encrypt(string: string): Promise<string> {
+    const nonce = await randomBytes(kBytes)
+    const cipher = createCipheriv(algorithm, currentSecret, nonce)
 
-    if (legacy === false) {
-      const nonce = await randomBytes(kBytes)
-      const cipher = createCipheriv(algorithm, currentSecret, nonce)
-      buffers.push(kVersion, nonce, cipher.update(Buffer.from(string)), cipher.final())
-    } else {
-      console.warn('[warn] consider not using legacy generation mode') // eslint-disable-line no-console
-      const cipher = cryptoCreateCipher(algorithm, legacySecret)
-      buffers.push(cipher.update(Buffer.from(string)), cipher.final())
-    }
-
-    const input = Buffer.concat(buffers).toString('base64')
-    return base64url.escape(input)
+    return Buffer.concat([
+      kVersion,
+      nonce,
+      cipher.update(Buffer.from(string)),
+      cipher.final()
+    ]).toString('base64url')
   }
 
   return { decrypt, encrypt }
@@ -121,10 +107,9 @@ export type SecretSettings = ({
  * @param  encrypt - if settings.encrypt is `true`, must be present
  * @param  settings
  * @param  payload
- * @param  [legacy=false] - uses deprecated crypto.createCipher
- * @return {String}
+ * @return {Promise<string>}
  */
-export async function createSecret(encrypt: Encrypt | undefined, settings: SecretSettings, payload: Record<any, unknown>, legacy = false): Promise<string> {
+export async function createSecret(encrypt: Encrypt | undefined, settings: SecretSettings, payload: Record<any, unknown>): Promise<string> {
   let token: string
   switch (settings.type) {
     case 'uuid': {
@@ -154,7 +139,7 @@ export async function createSecret(encrypt: Encrypt | undefined, settings: Secre
   // return encrypted payload + token or plain token
   if (settings.encrypt) {
     assert(encrypt, 'encrypt function must be defined')
-    return encrypt(JSON.stringify({ ...payload, token }), legacy)
+    return encrypt(JSON.stringify({ ...payload, token }))
   }
 
   return token
