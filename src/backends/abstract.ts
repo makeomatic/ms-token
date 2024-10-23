@@ -201,9 +201,9 @@ export type UpdateSecret = {
 }
 
 export abstract class Backend {
-  abstract async create(settings: CreateOpts): Promise<{ ok: 200 }>
-  abstract async regenerate(opts: RegenerateOpts, updateSecret: UpdateSecret): Promise<string>
-  abstract async info(opts: InfoOpts): Promise<Response>
-  abstract async verify(opts: VerifyOpts, settings: VerifySettings): Promise<Response>
-  abstract async remove(opts: RemoveOpts): Promise<{ ok: 200 }>
+  abstract create(settings: CreateOpts): Promise<{ ok: 200 }>
+  abstract regenerate(opts: RegenerateOpts, updateSecret: UpdateSecret): Promise<string>
+  abstract info(opts: InfoOpts): Promise<Response>
+  abstract verify(opts: VerifyOpts, settings: VerifySettings): Promise<Response>
+  abstract remove(opts: RemoveOpts): Promise<{ ok: 200 }>
 }
