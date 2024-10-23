@@ -1,6 +1,6 @@
 {
   "name": "ms-token",
-  "version": "2.0.0",
+  "version": "6.0.0",
   "description": "utils for makeomatic mservice for encoding/decoding various token types and storing associated metadata with them",
   "main": "./lib/index.js",
   "scripts": {
