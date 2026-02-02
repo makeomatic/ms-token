@@ -49,7 +49,7 @@
     "@typescript-eslint/parser": "^7.18.0",
     "copyfiles": "^2.4.1",
     "cross-env": "^7.0.3",
-    "eslint": "^8.57.1",
+    "eslint": "^9.26.0",
     "eslint-config-makeomatic": "^6.0.0",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-mocha": "^10.5.0",
